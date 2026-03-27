@@ -324,5 +324,55 @@ function renderToolsList(el, tools, range, onDeleted) {
   bindDeleteButtons(el, onDeleted)
 }
 
-// ── 占位，后续 Task 实现 ──
-function renderRecommendations(el, tools, container, range) { el.innerHTML = '' }
+// ── RECOMMENDATIONS 面板 ──
+export function buildRecommendationsHtml(tools) {
+  const dust = tools.filter(t => isDust(t))
+  if (dust.length === 0) return null
+
+  const rows = dust.map(t => {
+    const color = TYPE_COLOR[t.type] ?? 'var(--green)'
+    return `<div style="display:flex;justify-content:space-between;padding:3px 0;
+        border-bottom:1px solid var(--border);">
+        <span style="font-size:14px;color:var(--muted);">
+          <span style="color:${color};font-size:11px;margin-right:4px;">${t.type[0].toUpperCase()}</span>${t.name}
+        </span>
+        <span style="font-size:12px;color:var(--red);">吃灰</span>
+      </div>`
+  }).join('')
+
+  return `
+    <div class="card">
+      <div class="section-title" style="margin-bottom:8px;">建议清理</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">
+        发现 <span style="color:var(--red);">${dust.length}</span> 个吃灰工具
+      </div>
+      <div style="margin-bottom:10px;">${rows}</div>
+      <button id="bulk-clean-btn"
+        style="width:100%;padding:6px;background:transparent;border:1px solid var(--red);
+          color:var(--red);border-radius:var(--radius);cursor:pointer;font-size:14px;
+          font-family:var(--font);">一键清理</button>
+    </div>`
+}
+
+function renderRecommendations(el, tools, container, range) {
+  const html = buildRecommendationsHtml(tools)
+  el.innerHTML = html ?? ''
+  if (!html) return
+
+  el.querySelector('#bulk-clean-btn')?.addEventListener('click', async () => {
+    const btn = el.querySelector('#bulk-clean-btn')
+    if (!confirm(`确认批量删除 ${tools.filter(isDust).length} 个吃灰工具？`)) return
+    btn.disabled = true
+    btn.textContent = '清理中…'
+    try {
+      const res = await fetch(`/api/tools/bulk-dust`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? '清理失败')
+      renderSkills(container, range)
+    } catch (err) {
+      alert(`清理失败：${err.message}`)
+      btn.disabled = false
+      btn.textContent = '一键清理'
+    }
+  })
+}

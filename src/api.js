@@ -118,10 +118,19 @@ export function createRouter() {
   router.delete('/api/tools/bulk-dust', async (req, res) => {
     const after = rangeToAfter(req.query.range ?? '7d')
     const dustNames = getDustToolNames({ after })
+    const deleted = []
     for (const name of dustNames) {
+      // 尝试物理删除（skill 和 agent 都在 skills/ 目录）
+      for (const subdir of ['skills', 'plugins']) {
+        const target = path.join(getClaudeDir(), subdir, name)
+        if (fs.existsSync(target)) {
+          try { fs.rmSync(target, { recursive: true, force: true }) } catch {}
+        }
+      }
       deleteTool(name)
+      deleted.push(name)
     }
-    res.json({ deleted: dustNames.length, names: dustNames })
+    res.json({ deleted: deleted.length, names: deleted })
   })
 
   // --- 单条删除（必须在 bulk-dust 之后注册）---
