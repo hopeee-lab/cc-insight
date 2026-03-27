@@ -164,6 +164,138 @@ function renderUnusedTools(el, tools) {
   el.style.display = html ? '' : 'none'
 }
 
+// ── 工具完整列表（右侧面板）──
+
+const TYPE_BADGE = {
+  skill:  { label: 'S', color: 'var(--green)'  },
+  agent:  { label: 'A', color: 'var(--cyan)'   },
+  plugin: { label: 'P', color: 'var(--purple)' },
+}
+
+const SECURITY_BADGE = {
+  safe:      { text: '✓ 安全',  color: 'var(--green)' },
+  warning:   { text: '⚠ 警告', color: 'var(--amber)' },
+  unscanned: { text: '未审查',  color: 'var(--muted)' },
+}
+
+const SOURCE_LABEL = { downloaded: '下载', self: '自建' }
+
+function fmtDate(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+function isDust(t) {
+  const limit = 30 * 86400_000
+  if (t.lastUsedAt) return Date.now() - new Date(t.lastUsedAt).getTime() > limit
+  if (t.installedAt) return Date.now() - new Date(t.installedAt).getTime() > limit
+  return false
+}
+
+function toolCard(t) {
+  const badge    = TYPE_BADGE[t.type]    ?? { label: '?', color: 'var(--muted)' }
+  const secBadge = SECURITY_BADGE[t.securityScanResult] ?? SECURITY_BADGE.unscanned
+  const dust     = isDust(t)
+  const sourceLabel = SOURCE_LABEL[t.sourceType] ?? t.sourceType ?? '—'
+
+  const borderStyle = dust
+    ? 'border-left:3px solid var(--red);padding-left:9px;opacity:0.6;'
+    : 'border-left:3px solid transparent;padding-left:9px;'
+
+  const sourceLink = t.sourceUrl
+    ? `<a href="${t.sourceUrl}" target="_blank" rel="noopener"
+        style="color:var(--muted);font-size:11px;margin-left:4px;text-decoration:underline;">链接</a>`
+    : ''
+
+  return `
+    <div class="tool-card" data-name="${t.name}" data-type="${t.type}" data-dust="${dust}"
+      style="${borderStyle}margin-bottom:8px;padding-top:8px;padding-bottom:8px;
+        border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+        <span style="width:18px;height:18px;border-radius:3px;background:${badge.color}22;
+          color:${badge.color};font-size:11px;font-weight:bold;flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;">${badge.label}</span>
+        <span style="flex:1;font-size:14px;font-weight:500;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;" title="${t.name}">${t.name}</span>
+        <span style="font-size:12px;color:${secBadge.color};flex-shrink:0;">${secBadge.text}</span>
+        <span style="font-size:14px;color:${(t.useCount??0)===0?'var(--red)':'var(--muted)'};
+          flex-shrink:0;min-width:32px;text-align:right;">${t.useCount ?? 0}次</span>
+        <button class="del-btn" data-name="${t.name}" data-type="${t.type}"
+          style="background:transparent;border:1px solid var(--red);color:var(--red);
+            border-radius:3px;padding:2px 7px;font-size:12px;cursor:pointer;
+            flex-shrink:0;font-family:var(--font);">删除</button>
+      </div>
+      ${t.description ? `
+      <div style="font-size:14px;color:var(--muted);margin-bottom:4px;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+        title="${t.description}">${t.description}</div>` : ''}
+      <div style="font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;">
+        <span>来源: ${sourceLabel}${sourceLink}</span>
+        <span>安装: ${fmtDate(t.installedAt)}</span>
+        <span>更新: ${fmtDate(t.updatedAt)}</span>
+        <span>上次: ${fmtDate(t.lastUsedAt)}</span>
+        ${dust ? `<span style="color:var(--red);">吃灰</span>` : ''}
+      </div>
+    </div>`
+}
+
+export function buildToolsListHtml(tools) {
+  if (tools.length === 0) {
+    return `<div style="color:var(--muted);font-size:14px;padding:20px 0;text-align:center;">暂无工具数据</div>`
+  }
+
+  const dustCount = tools.filter(isDust).length
+  const tabs = [
+    { key: 'all',    label: `全部 (${tools.length})` },
+    { key: 'skill',  label: `Skill (${tools.filter(t=>t.type==='skill').length})` },
+    { key: 'agent',  label: `Agent (${tools.filter(t=>t.type==='agent').length})` },
+    { key: 'plugin', label: `Plugin (${tools.filter(t=>t.type==='plugin').length})` },
+    { key: 'dust',   label: `吃灰 (${dustCount})` },
+  ]
+
+  const tabHtml = tabs.map((tab, i) => `
+    <button class="filter-tab ${i===0?'active':''}" data-filter="${tab.key}"
+      style="background:${i===0?'var(--bg3)':'transparent'};border:none;cursor:pointer;
+        padding:4px 10px;font-size:14px;border-radius:3px;font-family:var(--font);
+        color:${i===0?'var(--text)':'var(--muted)'};">${tab.label}</button>`).join('')
+
+  return `
+    <div class="card" style="height:100%;display:flex;flex-direction:column;">
+      <div class="section-title" style="margin-bottom:8px;">全部工具</div>
+      <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;">${tabHtml}</div>
+      <div id="tools-card-list" style="overflow-y:auto;flex:1;">
+        ${tools.map(toolCard).join('')}
+      </div>
+    </div>`
+}
+
+export function bindFilterTabs(container) {
+  container.querySelectorAll('.filter-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.filter-tab').forEach(b => {
+        b.style.color = 'var(--muted)'
+        b.style.background = 'transparent'
+      })
+      btn.style.color = 'var(--text)'
+      btn.style.background = 'var(--bg3)'
+
+      const filter = btn.dataset.filter
+      container.querySelectorAll('.tool-card').forEach(card => {
+        const match =
+          filter === 'all'  ? true :
+          filter === 'dust' ? card.dataset.dust === 'true' :
+          card.dataset.type === filter
+        card.style.display = match ? '' : 'none'
+      })
+    })
+  })
+}
+
+function renderToolsList(el, tools, range, onDeleted) {
+  el.innerHTML = buildToolsListHtml(tools)
+  bindFilterTabs(el)
+}
+
 // ── 占位，后续 Task 实现 ──
-function renderToolsList(el, tools, range, onDeleted) { el.innerHTML = '' }
 function renderRecommendations(el, tools, container, range) { el.innerHTML = '' }
