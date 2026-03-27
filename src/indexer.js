@@ -67,7 +67,7 @@ function findAllTools(claudeDir) {
 export async function indexJsonlFile(filePath) {
   const result = parseJsonlFile(filePath)
   if (!result) return
-  upsertSession({ ...result, source: 'claude-code', jsonlFile: filePath })
+  upsertSession({ ...result, id: result.sessionId, source: 'claude-code', jsonlFile: filePath })
   if (result.invocations.length > 0) {
     insertInvocations(result.invocations.map(inv => ({
       sessionId: result.sessionId, ...inv
