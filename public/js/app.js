@@ -30,6 +30,7 @@ function connectWS() {
     }
 
     if (msg.type === 'refresh') {
+      document.getElementById('progress-screen').classList.add('hidden')
       renderView(currentView)
     }
 

@@ -71,7 +71,7 @@
     .main { display: flex; flex: 1; overflow: hidden; }
 
     /* ── Content ── */
-    .content { flex: 1; overflow-y: auto; padding: 20px; }
+    .content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
 
     /* ── Cards ── */
     .card {
@@ -102,7 +102,7 @@
     .range-btn:hover:not(.active) { color: var(--text); }
 
     /* ── Split layout ── */
-    .split { display: grid; grid-template-columns: 280px 1fr; gap: 12px; }
+    .split { display: grid; grid-template-columns: 280px 1fr; gap: 12px; flex: 1; }
     .split-left { display: flex; flex-direction: column; gap: 10px; }
 
     /* ── Section header ── */
@@ -142,7 +142,7 @@
 <body>
 
 <!-- 首次建库进度屏 -->
-<div id="progress-screen" class="hidden">
+<div id="progress-screen">
   <div class="progress-title">CC Insight — 正在建立索引</div>
   <div class="progress-bar-wrap">
     <div class="progress-bar" id="progress-bar"></div>
