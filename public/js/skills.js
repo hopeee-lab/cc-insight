@@ -292,9 +292,36 @@ export function bindFilterTabs(container) {
   })
 }
 
+export function bindDeleteButtons(container, onDeleted) {
+  container.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const { name, type } = btn.dataset
+      if (!confirm(`确认删除「${name}」？此操作不可撤销。`)) return
+
+      btn.disabled = true
+      btn.textContent = '删除中…'
+
+      try {
+        const res = await fetch(`/api/tools/${encodeURIComponent(name)}?type=${type}`, {
+          method: 'DELETE',
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? '删除失败')
+        btn.closest('.tool-card')?.remove()
+        if (typeof onDeleted === 'function') onDeleted(name, type)
+      } catch (err) {
+        alert(`删除失败：${err.message}`)
+        btn.disabled = false
+        btn.textContent = '删除'
+      }
+    })
+  })
+}
+
 function renderToolsList(el, tools, range, onDeleted) {
   el.innerHTML = buildToolsListHtml(tools)
   bindFilterTabs(el)
+  bindDeleteButtons(el, onDeleted)
 }
 
 // ── 占位，后续 Task 实现 ──

@@ -7,7 +7,27 @@ import {
   getPeakPeriod, getSilentDays, getHeatmapData, get24hDistribution,
   getInvocationsByTool, getAllTools, getToolUsageStats, deleteTool, getDustToolNames
 } from './db/queries.js'
-import { getConfigPath, getAppDir } from './config.js'
+import { getConfigPath, getAppDir, getClaudeDir } from './config.js'
+
+// ── 工具路径校验（导出供测试） ──
+const TYPE_DIR = {
+  skill:  'skills',
+  agent:  'skills',
+  plugin: 'plugins',
+}
+
+export function validateToolPath(name, type, claudeDir = getClaudeDir()) {
+  if (!TYPE_DIR[type]) throw new Error(`未知工具类型: ${type}`)
+  if (!name || name.includes('..') || name.includes('/') || name.includes('\\')) {
+    throw new Error(`非法工具名称: ${name}`)
+  }
+  const base = path.join(claudeDir, TYPE_DIR[type])
+  const target = path.resolve(base, name)
+  if (!target.startsWith(base + path.sep) && target !== base) {
+    throw new Error(`路径越界: ${target}`)
+  }
+  return target
+}
 
 export function createRouter() {
   const router = Router()
@@ -107,11 +127,25 @@ export function createRouter() {
   // --- 单条删除（必须在 bulk-dust 之后注册）---
   router.delete('/api/tools/:name', async (req, res) => {
     const { name } = req.params
-    if (!name || name.includes('/') || name.includes('..')) {
-      return res.status(400).json({ error: 'invalid name' })
+    const { type } = req.query
+
+    let targetPath
+    try {
+      targetPath = validateToolPath(name, type)
+    } catch (err) {
+      return res.status(400).json({ error: err.message })
     }
+
+    if (fs.existsSync(targetPath)) {
+      try {
+        fs.rmSync(targetPath, { recursive: true, force: true })
+      } catch (err) {
+        return res.status(500).json({ error: `删除文件失败: ${err.message}` })
+      }
+    }
+
     deleteTool(name)
-    res.json({ ok: true })
+    res.json({ ok: true, deleted: targetPath })
   })
 
   return router
