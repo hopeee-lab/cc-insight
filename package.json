@@ -1,0 +1,30 @@
+{
+  "name": "cc-insight",
+  "version": "0.1.0",
+  "description": "Local Claude Code usage dashboard",
+  "type": "module",
+  "bin": {
+    "cc-insight": "./bin/cc-insight.js"
+  },
+  "scripts": {
+    "start": "node bin/cc-insight.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --testPathPattern=tests/"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "chokidar": "^3.6.0",
+    "express": "^4.19.0",
+    "open": "^10.1.0",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "transform": {},
+    "extensionsToTreatAsEsm": [".js"]
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
