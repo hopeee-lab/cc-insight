@@ -48,8 +48,8 @@ function renderView(view) {
   currentView = view
   const content = document.getElementById('content')
 
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.view === view)
+  document.querySelectorAll('#tab-group .tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view)
   })
 
   if (view === 'overview') renderOverview(content, currentRange)
@@ -68,10 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   connectWS()
 
   // 侧边栏导航
-  document.querySelectorAll('.nav-item[data-view]').forEach(el => {
-    el.addEventListener('click', () => {
-      if (el.style.cursor === 'default') return
-      renderView(el.dataset.view)
-    })
+  document.querySelectorAll('#tab-group .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => renderView(btn.dataset.view))
   })
 })
