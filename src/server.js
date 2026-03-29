@@ -32,7 +32,11 @@ export function createAppServer() {
 
   wss.on('connection', (ws) => {
     if (_lastProgress !== null && _lastProgress < 100) {
+      // 正在索引中：发当前进度
       ws.send(JSON.stringify({ type: 'progress', pct: _lastProgress }))
+    } else {
+      // 已完成或未索引：立即告知客户端可以显示主界面
+      ws.send(JSON.stringify({ type: 'ready' }))
     }
   })
 

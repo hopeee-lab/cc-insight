@@ -41,7 +41,7 @@ function statsCards(data) {
       <div class="card">
         <div class="card-label">Peak Period</div>
         <div class="card-value amber">${data.peakPeriod ?? '—'}</div>
-        <div class="card-sub">最活跃时段</div>
+        <div class="card-sub">活跃时段</div>
       </div>
       <div class="card">
         <div class="card-label">Avg / Day</div>
@@ -52,33 +52,40 @@ function statsCards(data) {
 }
 
 export async function renderOverview(container, range) {
-  const [overview, heatmap, dist, insights] = await Promise.all([
+  const [overview, heatmap, dist, insights, toolDist] = await Promise.all([
     fetch(`/api/overview?range=${range}`).then(r => r.json()),
     fetch(`/api/heatmap?range=${range}`).then(r => r.json()),
     fetch(`/api/distribution?range=${range}`).then(r => r.json()),
     fetch(`/api/insights?range=${range}`).then(r => r.json()),
+    fetch(`/api/tool-distribution?range=${range}`).then(r => r.json()),
   ])
 
   container.innerHTML = `
     ${rangeFilter(range)}
     ${statsCards(overview)}
-    <div class="split" style="flex:1;min-height:0;">
+    <div class="split">
       <div class="split-left">
         <div id="insights-panel"></div>
       </div>
-      <div>
+      <div class="split-right">
         <div class="card" style="margin-bottom:10px;">
           <div class="section-header">
             <span class="section-title">Activity Heatmap</span>
           </div>
           <div id="heatmap-canvas"></div>
         </div>
-        <div class="card">
+        <div class="card" style="margin-bottom:10px;">
           <div class="section-header">
             <span class="section-title">24H 时间分布</span>
             <span id="dist-peak-label" class="muted" style="font-size:12px;"></span>
           </div>
           <div id="dist-canvas"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <span class="section-title">工具调用分布</span>
+          </div>
+          <div id="tool-dist-canvas"></div>
         </div>
       </div>
     </div>`
@@ -90,6 +97,7 @@ export async function renderOverview(container, range) {
   renderInsights(document.getElementById('insights-panel'), insights)
   renderHeatmap(document.getElementById('heatmap-canvas'), heatmap)
   renderDist(document.getElementById('dist-canvas'), dist)
+  renderToolDist(document.getElementById('tool-dist-canvas'), toolDist)
 }
 
 // ── Heatmap ──
@@ -97,22 +105,9 @@ function renderHeatmap(el, data) {
   const map = Object.fromEntries(data.map(r => [r.day, r.count]))
   const max = Math.max(...Object.values(map), 1)
 
-  const today = new Date()
-  const start = new Date(today)
-  start.setDate(today.getDate() - 7 * 16)
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
-
-  const weeks = []
-  let cur = new Date(start)
-  while (cur <= today) {
-    const week = []
-    for (let d = 0; d < 7; d++) {
-      const key = cur.toISOString().slice(0, 10)
-      week.push({ day: key, count: map[key] ?? 0 })
-      cur.setDate(cur.getDate() + 1)
-    }
-    weeks.push(week)
-  }
+  const CELL = 12   // 固定 cell 尺寸
+  const GAP  = 3
+  const LABEL_W = 28
 
   function intensity(count) {
     if (count === 0) return 'var(--bg3)'
@@ -125,25 +120,75 @@ function renderHeatmap(el, data) {
 
   const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', '']
 
-  el.innerHTML = `
-    <div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;">
-      <div style="display:flex;flex-direction:column;gap:3px;margin-right:4px;padding-top:2px;">
-        ${dayLabels.map(l => `<div style="height:12px;font-size:10px;color:var(--muted);line-height:12px;">${l}</div>`).join('')}
-      </div>
-      ${weeks.map(week => `
-        <div style="display:flex;flex-direction:column;gap:3px;">
-          ${week.map(cell => `
-            <div title="${cell.day}: ${cell.count} sessions"
-              style="width:12px;height:12px;border-radius:2px;background:${intensity(cell.count)};cursor:default;flex-shrink:0;">
+  function buildWeeks(numWeeks) {
+    const today = new Date()
+    const start = new Date(today)
+    start.setDate(today.getDate() - 7 * numWeeks)
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
+
+    const weeks = []
+    let cur = new Date(start)
+    while (cur <= today) {
+      const week = []
+      for (let d = 0; d < 7; d++) {
+        const key = cur.toISOString().slice(0, 10)
+        week.push({ day: key, count: map[key] ?? 0 })
+        cur.setDate(cur.getDate() + 1)
+      }
+      weeks.push(week)
+    }
+    return weeks
+  }
+
+  function buildGrid(numWeeks) {
+    const weeks = buildWeeks(numWeeks)
+    const colWidth = CELL + GAP
+    return `
+      <div style="display:flex;gap:${GAP}px;">
+        <div style="display:flex;flex-direction:column;gap:${GAP}px;width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
+          ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
+        </div>
+        <div style="display:flex;gap:${GAP}px;">
+          ${weeks.map(week => `
+            <div style="display:flex;flex-direction:column;gap:${GAP}px;">
+              ${week.map(cell => `
+                <div title="${cell.day}: ${cell.count} sessions"
+                  style="width:${CELL}px;height:${CELL}px;border-radius:2px;
+                    background:${intensity(cell.count)};cursor:default;flex-shrink:0;">
+                </div>`).join('')}
             </div>`).join('')}
-        </div>`).join('')}
-    </div>
-    <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
-      <span style="font-size:11px;color:var(--muted);">少</span>
-      ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
-        `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
-      <span style="font-size:11px;color:var(--muted);">多</span>
-    </div>`
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
+        <span style="font-size:11px;color:var(--muted);">少</span>
+        ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
+          `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
+        <span style="font-size:11px;color:var(--muted);">多</span>
+      </div>`
+  }
+
+  // 根据容器宽度计算能放多少周
+  function calcWeeks(containerW) {
+    const usable = containerW - LABEL_W - GAP
+    return Math.max(4, Math.floor((usable + GAP) / (CELL + GAP)))
+  }
+
+  el.innerHTML = buildGrid(16)
+
+  if (typeof ResizeObserver !== 'undefined') {
+    let init = true
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0].contentRect.width
+      if (w < 10) return
+      const numWeeks = calcWeeks(w)
+      if (init || el._lastWeeks !== numWeeks) {
+        el._lastWeeks = numWeeks
+        el.innerHTML = buildGrid(numWeeks)
+        init = false
+      }
+    })
+    ro.observe(el)
+  }
 }
 
 // ── 24H Distribution ──
@@ -234,5 +279,85 @@ function renderInsights(el, insights) {
     <div class="card">
       <div class="section-title" style="margin-bottom:10px;">Insights</div>
       <div style="display:flex;flex-direction:column;gap:8px;">${cards}</div>
+    </div>`
+}
+
+// ── 工具调用分布环形图 ──
+function renderToolDist(el, data) {
+  if (!data || data.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
+    return
+  }
+
+  const COLORS = [
+    'var(--green)', 'var(--cyan)', 'var(--amber)', 'var(--purple)', 'var(--red)',
+    '#f97316', '#06b6d4', '#a3e635', '#e879f9', '#38bdf8',
+  ]
+  const TOP_N = 8
+
+  const total = data.reduce((s, r) => s + r.count, 0)
+  const top = data.slice(0, TOP_N)
+  const otherCount = data.slice(TOP_N).reduce((s, r) => s + r.count, 0)
+  const items = otherCount > 0 ? [...top, { toolName: '其他', count: otherCount }] : top
+
+  // SVG 环形图
+  const R = 54, r = 32, cx = 70, cy = 70
+  let angle = -Math.PI / 2
+  const paths = items.map((item, i) => {
+    const pct = item.count / total
+    const sweep = pct * 2 * Math.PI
+    const x1 = cx + R * Math.cos(angle), y1 = cy + R * Math.sin(angle)
+    const x2 = cx + R * Math.cos(angle + sweep), y2 = cy + R * Math.sin(angle + sweep)
+    const ix1 = cx + r * Math.cos(angle), iy1 = cy + r * Math.sin(angle)
+    const ix2 = cx + r * Math.cos(angle + sweep), iy2 = cy + r * Math.sin(angle + sweep)
+    const large = sweep > Math.PI ? 1 : 0
+    const color = i < COLORS.length ? COLORS[i] : 'var(--muted)'
+    const d = `M${x1},${y1} A${R},${R},0,${large},1,${x2},${y2} L${ix2},${iy2} A${r},${r},0,${large},0,${ix1},${iy1} Z`
+    angle += sweep
+    return `<path d="${d}" fill="${color}" opacity="0.9"/>`
+  }).join('')
+
+  const totalFmt = total >= 10000 ? (total / 10000).toFixed(1) + 'w次' : total.toLocaleString() + '次'
+
+  function legendItem(item, i) {
+    const color = i < COLORS.length ? COLORS[i] : 'var(--muted)'
+    const pct = Math.round(item.count / total * 100)
+    const countFmt = item.count >= 10000 ? (item.count / 10000).toFixed(1) + 'w次' : item.count.toLocaleString() + '次'
+    return `
+      <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+        <span style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0;"></span>
+        <span style="font-size:13px;color:var(--text);min-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.toolName}</span>
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;min-width:32px;text-align:right;">${pct}%</span>
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;min-width:58px;text-align:right;">${countFmt}</span>
+      </div>`
+  }
+
+  // 超过 5 个时拆成 2 列（每列最多 5 个）
+  const useTwoCols = items.length > 5
+  let legendHtml
+  if (useTwoCols) {
+    const col1 = items.slice(0, 5)
+    const col2 = items.slice(5, 10)
+    legendHtml = `
+      <div style="display:flex;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">${col1.map((item, i) => legendItem(item, i)).join('')}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">${col2.map((item, i) => legendItem(item, i + 5)).join('')}</div>
+      </div>`
+  } else {
+    legendHtml = `<div style="display:flex;flex-direction:column;gap:6px;">${items.map(legendItem).join('')}</div>`
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;gap:20px;align-items:center;justify-content:center;">
+      <div style="flex-shrink:0;">
+        <svg width="120" height="120" viewBox="0 0 140 140">
+          ${paths}
+          <text x="${cx}" y="${cy - 6}" text-anchor="middle"
+            style="font-size:11px;fill:var(--muted);font-family:var(--font);">总计</text>
+          <text x="${cx}" y="${cy + 10}" text-anchor="middle"
+            style="font-size:13px;font-weight:bold;fill:var(--text);font-family:var(--font);">${totalFmt}</text>
+        </svg>
+      </div>
+      ${legendHtml}
     </div>`
 }

@@ -2,6 +2,7 @@
 import { initTheme } from './theme.js'
 import { renderOverview } from './overview.js'
 import { renderSkills } from './skills.js'
+import { renderMcp } from './mcp.js'
 
 // 当前时间范围，全局共享
 export let currentRange = '7d'
@@ -55,6 +56,7 @@ function renderView(view) {
 
   if (view === 'overview') renderOverview(content, currentRange)
   if (view === 'skills')   renderSkills(content, currentRange)
+  if (view === 'mcp')      renderMcp(content)
 }
 
 // ── 时间筛选 ──

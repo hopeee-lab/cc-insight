@@ -5,7 +5,7 @@ import { getClaudeDir, getExtraSessionDirs } from './config.js'
 import { parseJsonlFile } from './parsers/jsonl.js'
 import { parseSkillMd } from './parsers/skill-md.js'
 import { scanSkillSecurity } from './parsers/security.js'
-import { upsertSession, upsertTool, insertInvocations, getIndexedFiles } from './db/queries.js'
+import { upsertSession, upsertTool, insertInvocations, getIndexedFiles, syncToolIds } from './db/queries.js'
 import { getMeta, setMeta } from './db/db.js'
 
 function findAllJsonlFiles(claudeDir) {
@@ -36,11 +36,13 @@ function findAllTools(claudeDir) {
       const skillMd = path.join(skillsDir, name, 'SKILL.md')
       const stat = fs.statSync(path.join(skillsDir, name))
       if (!stat.isDirectory()) continue
-      const meta = parseSkillMd(skillMd, name) ?? { name, description: '', type: 'skill' }
+      const meta = parseSkillMd(skillMd, name) ?? { name, description: '', type: 'skill', source: null }
       const security = scanSkillSecurity(skillMd)
       const toolType = ['skill', 'agent'].includes(meta.type) ? meta.type : 'skill'
+      const sourceType = meta.source ? 'downloaded' : 'self'
+      const sourceUrl  = meta.source ?? null
       tools.push({ id: `${toolType}:${name}`, name: meta.name, type: toolType,
-        subtype: null, description: meta.description, sourceType: 'downloaded', sourceUrl: null,
+        subtype: null, description: meta.description, sourceType, sourceUrl,
         installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
         securityScanResult: security })
     }
@@ -51,13 +53,25 @@ function findAllTools(claudeDir) {
     for (const marketplace of fs.readdirSync(pluginsDir)) {
       const mDir = path.join(pluginsDir, marketplace)
       if (!fs.statSync(mDir).isDirectory()) continue
-      for (const pluginName of fs.readdirSync(mDir)) {
-        const stat = fs.statSync(path.join(mDir, pluginName))
-        if (!stat.isDirectory()) continue
-        tools.push({ id: `plugin:${marketplace}:${pluginName}`, name: pluginName,
+      const children = fs.readdirSync(mDir).filter(n =>
+        fs.statSync(path.join(mDir, n)).isDirectory()
+      )
+      if (children.length > 1) {
+        // 多子 plugin（如 knowledge-work-plugins）→ 以 marketplace 为整体注册
+        const stat = fs.statSync(mDir)
+        tools.push({ id: `plugin:${marketplace}:${marketplace}`, name: marketplace,
           type: 'plugin', subtype: null, description: '', sourceType: 'downloaded',
           sourceUrl: null, installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
           securityScanResult: 'unscanned' })
+      } else {
+        // 单 plugin（如 claude-plugins-official/superpowers）→ 以 pluginName 注册
+        for (const pluginName of children) {
+          const stat = fs.statSync(path.join(mDir, pluginName))
+          tools.push({ id: `plugin:${marketplace}:${pluginName}`, name: pluginName,
+            type: 'plugin', subtype: null, description: '', sourceType: 'downloaded',
+            sourceUrl: null, installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
+            securityScanResult: 'unscanned' })
+        }
       }
     }
   }
@@ -80,8 +94,9 @@ export async function runFullIndex(onProgress) {
   const files = findAllJsonlFiles(claudeDir)
   const tools = findAllTools(claudeDir)
 
-  // Index tools first (fast)
+  // Index tools first (fast)，并同步删除已不存在的工具记录
   for (const tool of tools) upsertTool(tool)
+  syncToolIds(new Set(tools.map(t => t.id)))
 
   // Index JSONL files with progress
   const indexed = getIndexedFiles()

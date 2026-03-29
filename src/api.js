@@ -1,12 +1,15 @@
 // src/api.js
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { Router } from 'express'
 import {
   getSessionCount, getTotalDurationSec, getAvgDailyDurationSec,
   getPeakPeriod, getSilentDays, getHeatmapData, get24hDistribution,
-  getInvocationsByTool, getAllTools, getToolUsageStats, deleteTool, getDustToolNames
+  getInvocationsByTool, getAllTools, getToolUsageStats, deleteTool, getDustToolNames,
+  getToolDistribution, getPluginSubskillStats
 } from './db/queries.js'
+import { getDb } from './db/db.js'
 import { getConfigPath, getAppDir, getClaudeDir } from './config.js'
 
 // ── 工具路径校验（导出供测试） ──
@@ -63,6 +66,11 @@ export function createRouter() {
     res.json(get24hDistribution({ after }))
   })
 
+  router.get('/api/tool-distribution', (req, res) => {
+    const after = rangeToAfter(req.query.range ?? '7d')
+    res.json(getToolDistribution({ after }))
+  })
+
   router.get('/api/insights', (req, res) => {
     const after = rangeToAfter(req.query.range ?? '7d')
     res.json(buildInsights({ after }))
@@ -74,18 +82,102 @@ export function createRouter() {
     const tools = getAllTools()
     const usageStats = getToolUsageStats({ after })
     const statsMap = Object.fromEntries(usageStats.map(s => [s.toolName, s]))
-    const result = tools.map(t => ({
-      ...t,
-      // camelCase 别名（DB 返回 snake_case，前端统一用 camelCase）
-      sourceType:         t.source_type,
-      sourceUrl:          t.source_url,
-      installedAt:        t.installed_at,
-      updatedAt:          t.updated_at,
-      securityScanResult: t.security_scan_result,
-      // 使用统计（来自 tool_invocations 聚合）
-      useCount:   statsMap[t.name]?.useCount   ?? 0,
-      lastUsedAt: statsMap[t.name]?.lastUsedAt ?? null,
-    }))
+    const claudeDir = getClaudeDir()
+    const result = tools.map(t => {
+      // 推算本地路径
+      let localPath = null
+      if (t.type === 'skill' || t.type === 'agent') {
+        localPath = path.join(claudeDir, 'skills', t.name)
+      } else if (t.type === 'plugin') {
+        // id 格式: plugin:{marketplace}:{pluginName}
+        const parts = t.id.split(':')
+        if (parts.length >= 3) {
+          localPath = path.join(claudeDir, 'plugins', 'cache', parts[1], parts[2])
+        }
+      }
+      return {
+        ...t,
+        // camelCase 别名（DB 返回 snake_case，前端统一用 camelCase）
+        sourceType:         t.source_type,
+        sourceUrl:          t.source_url,
+        installedAt:        t.installed_at,
+        updatedAt:          t.updated_at,
+        securityScanResult: t.security_scan_result,
+        localPath,
+        // 使用统计（来自 tool_invocations 聚合）
+        useCount:   statsMap[t.name]?.useCount   ?? 0,
+        lastUsedAt: statsMap[t.name]?.lastUsedAt ?? null,
+      }
+    })
+    res.json(result)
+  })
+
+  // --- MCP Server 列表 ---
+  router.get('/api/mcp-servers', (req, res) => {
+    const claudeDir = getClaudeDir()
+    const configPaths = [
+      path.join(claudeDir, 'settings.json'),
+      path.join(claudeDir, 'settings.local.json'),
+      path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json'),
+    ]
+
+    // 1. 从配置文件读已声明的 MCP
+    const declared = {}
+    for (const p of configPaths) {
+      try {
+        const cfg = JSON.parse(fs.readFileSync(p, 'utf8'))
+        for (const [name, info] of Object.entries(cfg.mcpServers ?? {})) {
+          declared[name] = { name, source: 'config', command: info.command ?? null,
+            url: info.url ?? null, status: 'configured' }
+        }
+      } catch {}
+    }
+
+    // 2. 从 tool_invocations 推断历史使用过的 MCP（mcp__{server}__{tool} 格式）
+    const db = getDb()
+    const mcpRows = db.prepare(`
+      SELECT DISTINCT tool_name FROM tool_invocations WHERE tool_name GLOB 'mcp__*'
+    `).all()
+    const usedServers = {}
+    for (const { tool_name } of mcpRows) {
+      const parts = tool_name.split('__')
+      if (parts.length >= 3) {
+        const serverName = parts[1]
+        if (!usedServers[serverName]) usedServers[serverName] = []
+        usedServers[serverName].push(parts.slice(2).join('__'))
+      }
+    }
+
+    // 3. 从 auth cache 读 claude.ai 托管 MCP
+    const authCachePath = path.join(claudeDir, 'mcp-needs-auth-cache.json')
+    const authMcp = {}
+    try {
+      const cache = JSON.parse(fs.readFileSync(authCachePath, 'utf8'))
+      for (const name of Object.keys(cache)) {
+        authMcp[name] = { name, source: 'claude.ai', status: 'hosted' }
+      }
+    } catch {}
+
+    // 合并：配置 > 使用记录 > auth cache
+    const result = []
+    const seen = new Set()
+
+    for (const [name, info] of Object.entries(declared)) {
+      seen.add(name)
+      result.push({ ...info, tools: usedServers[name] ?? [], invocations: (usedServers[name] ?? []).length })
+    }
+    for (const [serverName, tools] of Object.entries(usedServers)) {
+      if (seen.has(serverName)) continue
+      seen.add(serverName)
+      result.push({ name: serverName, source: 'history', command: null, url: null,
+        status: 'used', tools, invocations: tools.length })
+    }
+    for (const [name, info] of Object.entries(authMcp)) {
+      if (seen.has(name)) continue
+      seen.add(name)
+      result.push({ ...info, tools: [], invocations: 0 })
+    }
+
     res.json(result)
   })
 
@@ -131,6 +223,12 @@ export function createRouter() {
       deleted.push(name)
     }
     res.json({ deleted: deleted.length, names: deleted })
+  })
+
+  // --- Plugin 子技能调用明细 ---
+  router.get('/api/tools/:name/subskills', (req, res) => {
+    const after = rangeToAfter(req.query.range ?? '7d')
+    res.json(getPluginSubskillStats({ name: req.params.name, after }))
   })
 
   // --- 单条删除（必须在 bulk-dust 之后注册）---

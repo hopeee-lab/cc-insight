@@ -35,7 +35,9 @@ function usageCard(label, color, total, used) {
         <span style="font-size:14px;color:var(--muted);">
           使用率 <span style="color:${color};">${used}/${total}</span>
         </span>
-        ${unused > 0
+        ${total === 0
+          ? `<span style="font-size:14px;color:var(--red);">未用 —</span>`
+          : unused > 0
           ? `<span style="font-size:14px;color:var(--red);">未用 ${unused}</span>`
           : `<span style="font-size:14px;color:var(--green);">全部使用</span>`}
       </div>
@@ -63,13 +65,13 @@ export async function renderSkills(container, range) {
   container.innerHTML = `
     ${rangeFilter(range)}
     ${buildOverviewCards(tools, usageMap)}
-    <div class="split" style="flex:1;min-height:0;">
+    <div class="split">
       <div class="split-left">
         <div id="top-tools-panel"></div>
         <div id="unused-tools-panel"></div>
         <div id="recommendations-panel"></div>
       </div>
-      <div id="tools-list-panel"></div>
+      <div class="split-right" id="tools-list-panel"></div>
     </div>`
 
   container.querySelectorAll('.range-btn').forEach(btn => {
@@ -95,13 +97,27 @@ function daysSince(isoStr) {
   return Math.floor((Date.now() - new Date(isoStr).getTime()) / 86400000)
 }
 
-// ── Top 5 标签云 ──
-export function buildTopToolsHtml(tools, range) {
+const LIST_PAGE_SIZE = 5
+
+function pageBtns(page, totalPages, prevClass, nextClass) {
+  return `
+    <div style="display:flex;align-items:center;gap:2px;">
+      <button class="${prevClass}" style="background:transparent;border:none;cursor:pointer;
+        color:var(--muted);font-size:14px;padding:0 4px;font-family:var(--font);
+        ${page === 0 ? 'opacity:0.3;pointer-events:none;' : ''}">&lt;</button>
+      <span style="font-size:12px;color:var(--muted);min-width:28px;text-align:center;">${page + 1}/${totalPages}</span>
+      <button class="${nextClass}" style="background:transparent;border:none;cursor:pointer;
+        color:var(--muted);font-size:14px;padding:0 4px;font-family:var(--font);
+        ${page >= totalPages - 1 ? 'opacity:0.3;pointer-events:none;' : ''}">&gt;</button>
+    </div>`
+}
+
+// ── 最常用标签云 ──
+export function buildTopToolsHtml(tools, range, page = 0) {
   const rangeLabel = { '7d': '7 天', '30d': '30 天', '90d': '90 天', all: '全部时间' }
   const used = tools
     .filter(t => (t.useCount ?? 0) > 0)
     .sort((a, b) => b.useCount - a.useCount)
-    .slice(0, 5)
 
   if (used.length === 0) {
     return `
@@ -111,30 +127,44 @@ export function buildTopToolsHtml(tools, range) {
       </div>`
   }
 
-  const tags = used.map(t => {
+  const totalPages = Math.ceil(used.length / LIST_PAGE_SIZE)
+  const paged = used.slice(page * LIST_PAGE_SIZE, (page + 1) * LIST_PAGE_SIZE)
+
+  const rows = paged.map(t => {
     const color = TYPE_COLOR[t.type] ?? 'var(--green)'
     return `
-      <div style="display:flex;align-items:center;gap:4px;
-        background:${color}18;border:1px solid ${color}40;
-        border-radius:3px;padding:4px 10px;">
-        <span style="color:${color};font-size:14px;">${t.name}</span>
-        <span style="color:var(--muted);font-size:14px;">${t.useCount}次</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:5px 0;border-bottom:1px solid var(--border);">
+        <span style="display:flex;align-items:center;gap:6px;min-width:0;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${color};
+            flex-shrink:0;"></span>
+          <span style="color:${color};font-size:14px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap;">${t.name}</span>
+        </span>
+        <span style="color:var(--cyan);font-size:14px;white-space:nowrap;
+          margin-left:8px;">${t.useCount}次</span>
       </div>`
   }).join('')
 
   return `
     <div class="card" style="margin-bottom:10px;">
-      <div class="section-title" style="margin-bottom:8px;">近 ${rangeLabel[range] ?? range} 最常用</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">${tags}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="section-title">近 ${rangeLabel[range] ?? range} 最常用</div>
+        ${totalPages > 1 ? pageBtns(page, totalPages, 'top-prev-btn', 'top-next-btn') : ''}
+      </div>
+      <div>${rows}</div>
     </div>`
 }
 
 // ── 从未使用列表 ──
-export function buildUnusedToolsHtml(tools) {
+export function buildUnusedToolsHtml(tools, page = 0) {
   const unused = tools.filter(t => (t.useCount ?? 0) === 0)
   if (unused.length === 0) return null
 
-  const rows = unused.map(t => {
+  const totalPages = Math.ceil(unused.length / LIST_PAGE_SIZE)
+  const paged = unused.slice(page * LIST_PAGE_SIZE, (page + 1) * LIST_PAGE_SIZE)
+
+  const rows = paged.map(t => {
     const days = daysSince(t.installedAt)
     const color = TYPE_COLOR[t.type] ?? 'var(--green)'
     return `
@@ -143,25 +173,40 @@ export function buildUnusedToolsHtml(tools) {
         <span style="color:var(--muted);font-size:14px;">
           <span style="color:${color};font-size:11px;margin-right:4px;">${t.type[0].toUpperCase()}</span>${t.name}
         </span>
-        <span style="color:var(--red);font-size:14px;">闲置 ${days} 天</span>
+        <span style="color:var(--red);font-size:14px;white-space:nowrap;">闲置 ${days} 天</span>
       </div>`
   }).join('')
 
   return `
     <div class="card" style="margin-bottom:10px;">
-      <div class="section-title" style="color:var(--red);margin-bottom:8px;">从未使用（${unused.length}）</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="section-title" style="color:var(--red);">从未使用（${unused.length}）</div>
+        ${totalPages > 1 ? pageBtns(page, totalPages, 'unused-prev-btn', 'unused-next-btn') : ''}
+      </div>
       <div>${rows}</div>
     </div>`
 }
 
 function renderTopTools(el, tools, range) {
-  el.innerHTML = buildTopToolsHtml(tools, range)
+  let page = 0
+  function render() {
+    el.innerHTML = buildTopToolsHtml(tools, range, page)
+    el.querySelector('.top-prev-btn')?.addEventListener('click', () => { page--; render() })
+    el.querySelector('.top-next-btn')?.addEventListener('click', () => { page++; render() })
+  }
+  render()
 }
 
 function renderUnusedTools(el, tools) {
-  const html = buildUnusedToolsHtml(tools)
-  el.innerHTML = html ?? ''
-  el.style.display = html ? '' : 'none'
+  let page = 0
+  function render() {
+    const html = buildUnusedToolsHtml(tools, page)
+    el.innerHTML = html ?? ''
+    el.style.display = html ? '' : 'none'
+    el.querySelector('.unused-prev-btn')?.addEventListener('click', () => { page--; render() })
+    el.querySelector('.unused-next-btn')?.addEventListener('click', () => { page++; render() })
+  }
+  render()
 }
 
 // ── 工具完整列表（右侧面板）──
@@ -186,88 +231,181 @@ function fmtDate(iso) {
   return `${cst.getUTCFullYear()}-${String(cst.getUTCMonth()+1).padStart(2,'0')}-${String(cst.getUTCDate()).padStart(2,'0')}`
 }
 
+function toMs(v) { return v ? (typeof v === 'number' ? v : new Date(v).getTime()) : null }
+
 function isDust(t) {
   const limit = 30 * 86400_000
-  if (t.lastUsedAt) return Date.now() - new Date(t.lastUsedAt).getTime() > limit
-  if (t.installedAt) return Date.now() - new Date(t.installedAt).getTime() > limit
+  const last = toMs(t.lastUsedAt)
+  const inst = toMs(t.installedAt)
+  if (last !== null) return Date.now() - last > limit
+  if (inst !== null) return Date.now() - inst > limit
   return false
 }
 
-function toolCard(t) {
+function relativeTime(ts) {
+  if (!ts) return null
+  const ms = typeof ts === 'number' ? ts : new Date(ts).getTime()
+  const days = Math.floor((Date.now() - ms) / 86400_000)
+  if (days === 0) return '今天'
+  if (days === 1) return '1天前'
+  return `${days}天前`
+}
+
+function toolCard(t, range = '7d') {
   const badge    = TYPE_BADGE[t.type]    ?? { label: '?', color: 'var(--muted)' }
   const secBadge = SECURITY_BADGE[t.securityScanResult] ?? SECURITY_BADGE.unscanned
   const dust     = isDust(t)
-  const sourceLabel = SOURCE_LABEL[t.sourceType] ?? t.sourceType ?? '—'
 
-  const borderStyle = dust
-    ? 'border-left:3px solid var(--red);padding-left:9px;opacity:0.6;'
-    : 'border-left:3px solid transparent;padding-left:9px;'
+  const borderColor = dust ? 'var(--red)' : badge.color
+  const opacity = dust ? 'opacity:0.65;' : ''
 
-  const sourceLink = t.sourceUrl
-    ? `<a href="${t.sourceUrl}" target="_blank" rel="noopener"
-        style="color:var(--muted);font-size:11px;margin-left:4px;text-decoration:underline;">链接</a>`
+  // 顶部标签行
+  const typeTag = `<span style="font-size:12px;padding:1px 6px;border-radius:3px;
+    background:${badge.color}18;color:${badge.color};border:1px solid ${badge.color}40;">
+    ${(t.type ?? '').toUpperCase()}</span>`
+
+  const sourceTag = t.sourceType
+    ? `<span style="font-size:12px;padding:1px 6px;border-radius:3px;
+        background:var(--bg3);color:var(--muted);border:1px solid var(--border);">
+        ${SOURCE_LABEL[t.sourceType] ?? t.sourceType}</span>`
     : ''
+
+  const secTag = `<span style="font-size:12px;color:${secBadge.color};">${secBadge.text}</span>`
+
+  // 描述（只显示含中文字符的描述）
+  const hasChinese = s => /[\u4e00-\u9fff]/.test(s)
+  const descText = t.description && hasChinese(t.description) ? t.description : null
+  const descRow = descText
+    ? `<div style="margin-top:5px;font-size:14px;color:var(--muted);line-height:1.5;
+        word-break:break-word;max-width:66%;">${descText}</div>`
+    : ''
+
+  // 来源链接
+  const sourceLink = t.sourceUrl
+    ? `<div style="margin-top:4px;">
+        <a href="${t.sourceUrl}" target="_blank" rel="noopener"
+          style="font-size:14px;color:var(--cyan);text-decoration:none;word-break:break-all;"
+          title="${t.sourceUrl}">${t.sourceUrl.replace(/^https?:\/\//, '')}</a>
+       </div>`
+    : ''
+
+  // AI 建议框（只在有实际风险时显示，正向情况不提示）
+  const aiSuggestion = (() => {
+    const count = t.useCount ?? 0
+    const lastMs = toMs(t.lastUsedAt)
+    const instMs = toMs(t.installedAt)
+    const lastDays = lastMs !== null ? Math.floor((Date.now() - lastMs) / 86400_000) : null
+    const instDays = instMs !== null ? Math.floor((Date.now() - instMs) / 86400_000) : null
+    // 曾使用但停用超 30 天
+    if (count > 0 && lastDays !== null && lastDays > 30) return `已 ${lastDays} 天未使用，建议评估是否仍有需求`
+    // 从未使用且安装超 30 天
+    if (count === 0 && instDays !== null && instDays > 30) return `安装 ${instDays} 天从未使用，建议评估是否需要`
+    return null
+  })()
+  const aiBox = aiSuggestion
+    ? `<div style="margin-top:6px;padding:6px 10px;
+        background:color-mix(in srgb,var(--green) 8%,transparent);
+        border:1px solid color-mix(in srgb,var(--green) 30%,transparent);
+        border-radius:4px;display:flex;align-items:flex-start;gap:6px;">
+        <span style="font-size:12px;color:var(--green);font-weight:600;white-space:nowrap;padding-top:1px;">AI建议</span>
+        <span style="font-size:14px;color:var(--text);">${aiSuggestion}</span>
+       </div>`
+    : ''
+
+  // 底部统计行
+  const usedStr  = t.useCount > 0 ? `<span style="color:var(--cyan);">${t.useCount}次</span>` : `<span style="color:var(--red);">未使用</span>`
+  const lastStr  = t.lastUsedAt ? `<span>${relativeTime(t.lastUsedAt)}使用</span>` : ''
+  const installStr = t.installedAt ? `<span>安装 ${fmtDate(t.installedAt)}</span>` : ''
+  const updateStr  = t.updatedAt  ? `<span>更新 ${fmtDate(t.updatedAt)}</span>`  : ''
+  const pathStr  = t.localPath
+    ? `<span style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+        title="${t.localPath}">${t.localPath.replace(/^.*\.claude\//, '~/.claude/')}</span>`
+    : ''
+  const dustTag  = dust ? `<span style="color:var(--red);">· 吃灰</span>` : ''
+
+  const statsRow = [usedStr, lastStr, installStr, updateStr, dustTag].filter(Boolean).join(
+    `<span style="color:var(--border);margin:0 4px;">·</span>`)
 
   return `
     <div class="tool-card" data-name="${t.name}" data-type="${t.type}" data-dust="${dust}"
-      style="${borderStyle}margin-bottom:8px;padding-top:8px;padding-bottom:8px;
-        border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-        <span style="width:18px;height:18px;border-radius:3px;background:${badge.color}22;
-          color:${badge.color};font-size:11px;font-weight:bold;flex-shrink:0;
+      style="border-left:3px solid ${borderColor};padding-left:10px;${opacity}
+        padding-top:10px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+
+      <!-- 第一行：徽章 + 名称 + 信息标签 + 删除 -->
+      <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;">
+        <span style="width:20px;height:20px;border-radius:3px;background:${badge.color}22;
+          color:${badge.color};font-size:12px;font-weight:bold;flex-shrink:0;
           display:flex;align-items:center;justify-content:center;">${badge.label}</span>
-        <span style="flex:1;font-size:14px;font-weight:500;overflow:hidden;
-          text-overflow:ellipsis;white-space:nowrap;" title="${t.name}">${t.name}</span>
-        <span style="font-size:12px;color:${secBadge.color};flex-shrink:0;">${secBadge.text}</span>
-        <span style="font-size:14px;color:${(t.useCount??0)===0?'var(--red)':'var(--muted)'};
-          flex-shrink:0;min-width:32px;text-align:right;">${t.useCount ?? 0}次</span>
+        <span style="font-size:14px;font-weight:600;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;max-width:180px;" title="${t.name}">${t.name}</span>
+        ${typeTag}${sourceTag}${secTag}
+        <div style="flex:1;"></div>
+        ${t.type === 'plugin' ? `
+        <button class="detail-btn" data-name="${t.name}" data-range="${range}"
+          style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);
+            border-radius:3px;padding:2px 8px;font-size:14px;cursor:pointer;
+            flex-shrink:0;font-family:var(--font);">技能明细</button>` : ''}
         <button class="del-btn" data-name="${t.name}" data-type="${t.type}"
           style="background:transparent;border:1px solid var(--red);color:var(--red);
-            border-radius:3px;padding:2px 7px;font-size:12px;cursor:pointer;
+            border-radius:3px;padding:2px 8px;font-size:14px;cursor:pointer;
             flex-shrink:0;font-family:var(--font);">删除</button>
       </div>
-      ${t.description ? `
-      <div style="font-size:14px;color:var(--muted);margin-bottom:4px;
-        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-        title="${t.description}">${t.description}</div>` : ''}
-      <div style="font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;">
-        <span>来源: ${sourceLabel}${sourceLink}</span>
-        <span>安装: ${fmtDate(t.installedAt)}</span>
-        <span>更新: ${fmtDate(t.updatedAt)}</span>
-        <span>上次: ${fmtDate(t.lastUsedAt)}</span>
-        ${dust ? `<span style="color:var(--red);">吃灰</span>` : ''}
+
+      <!-- 描述 -->
+      ${descRow}
+
+      <!-- 来源链接 -->
+      ${sourceLink}
+
+      <!-- AI 建议框 -->
+      ${aiBox}
+
+      <!-- 底部统计 + 本地路径 -->
+      <div style="margin-top:6px;display:flex;justify-content:space-between;
+        align-items:center;gap:8px;min-width:0;">
+        <div style="font-size:14px;color:var(--muted);display:flex;align-items:center;
+          gap:2px;flex-shrink:0;">${statsRow}</div>
+        <div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;
+          white-space:nowrap;min-width:0;text-align:right;">${pathStr}</div>
       </div>
+
+      <!-- 技能明细展开区（plugin 专用） -->
+      ${t.type === 'plugin' ? `<div class="subskill-panel" style="display:none;"></div>` : ''}
     </div>`
 }
 
 const PAGE_SIZE = 10
 
-export function buildToolsListHtml(tools, page = 0) {
-  if (tools.length === 0) {
-    return `<div style="color:var(--muted);font-size:14px;padding:20px 0;text-align:center;">暂无工具数据</div>`
-  }
-
-  const dustCount = tools.filter(isDust).length
+// allTools 用于 tab 计数，displayTools 用于当前页显示
+export function buildToolsListHtml(allTools, displayTools, currentFilter, page = 0, range = '7d') {
+  const dustCount = allTools.filter(isDust).length
   const tabs = [
-    { key: 'all',    label: `全部 (${tools.length})` },
-    { key: 'skill',  label: `Skill (${tools.filter(t=>t.type==='skill').length})` },
-    { key: 'agent',  label: `Agent (${tools.filter(t=>t.type==='agent').length})` },
-    { key: 'plugin', label: `Plugin (${tools.filter(t=>t.type==='plugin').length})` },
+    { key: 'all',    label: `全部 (${allTools.length})` },
+    { key: 'skill',  label: `Skill (${allTools.filter(t=>t.type==='skill').length})` },
+    { key: 'agent',  label: `Agent (${allTools.filter(t=>t.type==='agent').length})` },
+    { key: 'plugin', label: `Plugin (${allTools.filter(t=>t.type==='plugin').length})` },
     { key: 'dust',   label: `吃灰 (${dustCount})` },
   ]
 
-  const tabHtml = tabs.map((tab, i) => `
-    <button class="filter-tab ${i===0?'active':''}" data-filter="${tab.key}"
-      style="background:${i===0?'var(--bg3)':'transparent'};border:none;cursor:pointer;
+  const tabHtml = tabs.map(tab => {
+    const active = tab.key === currentFilter
+    return `
+    <button class="filter-tab" data-filter="${tab.key}"
+      style="background:${active?'var(--bg3)':'transparent'};border:none;cursor:pointer;
         padding:4px 10px;font-size:14px;border-radius:3px;font-family:var(--font);
-        color:${i===0?'var(--text)':'var(--muted)'};">${tab.label}</button>`).join('')
+        color:${active?'var(--text)':'var(--muted)'};">${tab.label}</button>`
+  }).join('')
 
-  const totalPages = Math.ceil(tools.length / PAGE_SIZE)
-  const paged = tools.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const totalPages = Math.ceil(displayTools.length / PAGE_SIZE)
+  const paged = displayTools.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  const bodyHtml = displayTools.length === 0
+    ? `<div style="color:var(--muted);font-size:14px;padding:20px 0;text-align:center;">该分类暂无工具</div>`
+    : paged.map(t => toolCard(t, range)).join('')
 
   const paginationHtml = totalPages > 1 ? `
     <div style="display:flex;justify-content:space-between;align-items:center;
-      padding-top:10px;margin-top:auto;border-top:1px solid var(--border);">
+      padding-top:10px;border-top:1px solid var(--border);">
       <button class="page-btn" data-dir="-1"
         style="background:transparent;border:1px solid var(--border);color:var(--muted);
           border-radius:3px;padding:3px 10px;font-size:14px;cursor:pointer;font-family:var(--font);
@@ -280,22 +418,42 @@ export function buildToolsListHtml(tools, page = 0) {
     </div>` : ''
 
   return `
-    <div class="card" style="height:100%;display:flex;flex-direction:column;">
+    <div class="card" style="min-height:0;display:flex;flex-direction:column;">
       <div class="section-title" style="margin-bottom:8px;">全部工具</div>
       <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;">${tabHtml}</div>
-      <div id="tools-card-list" style="flex:1;overflow-y:auto;">
-        ${paged.map(toolCard).join('')}
-      </div>
+      <div id="tools-card-list">${bodyHtml}</div>
       ${paginationHtml}
     </div>`
 }
 
 
+function showConfirm(message) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirm-modal')
+    document.getElementById('confirm-msg').textContent = message
+    modal.style.display = 'flex'
+
+    function cleanup(result) {
+      modal.style.display = 'none'
+      okBtn.removeEventListener('click', onOk)
+      cancelBtn.removeEventListener('click', onCancel)
+      resolve(result)
+    }
+    const onOk     = () => cleanup(true)
+    const onCancel = () => cleanup(false)
+    const okBtn     = document.getElementById('confirm-ok')
+    const cancelBtn = document.getElementById('confirm-cancel')
+    okBtn.addEventListener('click', onOk)
+    cancelBtn.addEventListener('click', onCancel)
+  })
+}
+
 export function bindDeleteButtons(container, onDeleted) {
   container.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const { name, type } = btn.dataset
-      if (!confirm(`确认删除「${name}」？此操作不可撤销。`)) return
+      const confirmed = await showConfirm(`确认删除「${name}」？此操作不可撤销。`)
+      if (!confirmed) return
 
       btn.disabled = true
       btn.textContent = '删除中…'
@@ -317,6 +475,77 @@ export function bindDeleteButtons(container, onDeleted) {
   })
 }
 
+function bindDetailButtons(container) {
+  container.querySelectorAll('.detail-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const { name, range } = btn.dataset
+      const card = btn.closest('.tool-card')
+      const panel = card?.querySelector('.subskill-panel')
+      if (!panel) return
+
+      // 切换展开/收起
+      if (panel.style.display !== 'none') {
+        panel.style.display = 'none'
+        btn.textContent = '技能明细'
+        btn.style.color = 'var(--cyan)'
+        btn.style.borderColor = 'var(--cyan)'
+        return
+      }
+
+      btn.textContent = '加载中…'
+      btn.disabled = true
+
+      try {
+        const rows = await fetch(`/api/tools/${encodeURIComponent(name)}/subskills?range=${range}`)
+          .then(r => r.json())
+
+        if (!rows || rows.length === 0) {
+          panel.innerHTML = `<div style="font-size:13px;color:var(--muted);padding:8px 0;">
+            当前时间段内无调用记录</div>`
+        } else {
+          const total = rows.reduce((s, r) => s + r.count, 0)
+          const rowsHtml = rows.map(r => {
+            const pct = Math.round(r.count / total * 100)
+            const subName = r.toolName.replace(name + ':', '')
+            return `
+              <div style="display:flex;align-items:center;gap:10px;
+                padding:5px 8px;border-bottom:1px solid var(--border);">
+                <span style="flex:1;font-size:13px;font-family:var(--font);
+                  color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                  title="${r.toolName}">${subName}</span>
+                <span style="font-size:13px;color:var(--muted);white-space:nowrap;min-width:36px;text-align:right;">${pct}%</span>
+                <span style="font-size:13px;color:var(--cyan);white-space:nowrap;min-width:48px;text-align:right;">${r.count.toLocaleString()}次</span>
+              </div>`
+          }).join('')
+
+          panel.innerHTML = `
+            <div style="margin-top:8px;background:var(--bg3);border-radius:4px;
+              border:1px solid var(--border);overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:10px;
+                padding:5px 8px;border-bottom:1px solid var(--border);">
+                <span style="flex:1;font-size:11px;letter-spacing:1px;
+                  color:var(--muted);text-transform:uppercase;">子技能</span>
+                <span style="font-size:11px;color:var(--muted);min-width:36px;text-align:right;">占比</span>
+                <span style="font-size:11px;color:var(--muted);min-width:48px;text-align:right;">次数</span>
+              </div>
+              ${rowsHtml}
+            </div>`
+        }
+
+        panel.style.display = ''
+        btn.textContent = '收起'
+        btn.style.color = 'var(--cyan)'
+        btn.style.borderColor = 'var(--cyan)'
+      } catch {
+        panel.innerHTML = `<div style="font-size:13px;color:var(--red);padding:8px 0;">加载失败</div>`
+        panel.style.display = ''
+      } finally {
+        btn.disabled = false
+      }
+    })
+  })
+}
+
 function renderToolsList(el, tools, range, onDeleted) {
   let currentFilter = 'all'
   let currentPage = 0
@@ -328,13 +557,7 @@ function renderToolsList(el, tools, range, onDeleted) {
   }
 
   function render() {
-    el.innerHTML = buildToolsListHtml(filtered(), currentPage)
-    // 筛选 tab 高亮
-    el.querySelectorAll('.filter-tab').forEach(btn => {
-      const active = btn.dataset.filter === currentFilter
-      btn.style.color = active ? 'var(--text)' : 'var(--muted)'
-      btn.style.background = active ? 'var(--bg3)' : 'transparent'
-    })
+    el.innerHTML = buildToolsListHtml(tools, filtered(), currentFilter, currentPage, range)
     // tab 点击
     el.querySelectorAll('.filter-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -348,9 +571,12 @@ function renderToolsList(el, tools, range, onDeleted) {
       btn.addEventListener('click', () => {
         currentPage += parseInt(btn.dataset.dir)
         render()
+        const splitRight = el.closest('.split-right')
+        if (splitRight) splitRight.scrollTop = 0
       })
     })
     bindDeleteButtons(el, onDeleted)
+    bindDetailButtons(el)
   }
 
   render()
