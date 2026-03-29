@@ -63,7 +63,7 @@ export async function renderSkills(container, range) {
   container.innerHTML = `
     ${rangeFilter(range)}
     ${buildOverviewCards(tools, usageMap)}
-    <div class="split" style="flex:1;">
+    <div class="split" style="flex:1;min-height:0;">
       <div class="split-left">
         <div id="top-tools-panel"></div>
         <div id="unused-tools-panel"></div>

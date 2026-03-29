@@ -26,8 +26,12 @@ export function parseJsonlFile(filePath) {
     const content = r.message?.content ?? []
     for (const block of content) {
       if (block.type === 'tool_use' && block.name) {
+        // Skill 调用：用 input.skill 作为 toolName，保留真实 skill 名称
+        const toolName = block.name === 'Skill' && block.input?.skill
+          ? block.input.skill
+          : block.name
         invocations.push({
-          toolName: block.name,
+          toolName,
           invokedAt: new Date(r.timestamp).getTime() || startTime,
         })
       }

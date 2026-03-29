@@ -1,6 +1,6 @@
 # CC Insight 项目交接文档
 
-**日期：** 2026-03-27
+**日期：** 2026-03-29
 **用途：** 新会话上下文恢复，直接进入开发阶段
 
 ---
@@ -114,39 +114,44 @@
 
 ---
 
-## 五、下一步待完成任务
+## 五、当前状态与待完成任务
 
-**当前状态：源码文件一个都没有，从 Task 1.1 开始按顺序执行。**
+**当前状态（2026-03-29）：Part 1-8 已全部完成，git 已初始化，共 12 个 commit。**
 
-### 执行方式
+### 已完成阶段
 
-新会话中调用 `superpowers:executing-plans` skill，执行路径：
+| 阶段 | Tasks | 状态 |
+|------|-------|------|
+| 阶段 1：基础设施 | 1.1 → 1.3 | ✅ 完成 |
+| 阶段 2：数据层 | 2.1 → 2.4 | ✅ 完成 |
+| 阶段 3：索引层 | 3.1 → 3.3 | ✅ 完成 |
+| 阶段 4：服务层 | 4.1 → 4.2 | ✅ 完成 |
+| 阶段 5：前端框架 | 5.1 → 5.4 | ✅ 完成（主题改为固定深色） |
+| 阶段 6：使用概览 | 6.1 → 6.4 | ✅ 完成 |
+| 阶段 7：Skill 管理 | 7.1 → 7.5 | ✅ 完成 |
+| 阶段 8：CLI | 8.1 → 8.2 | ✅ 完成 |
 
-```
-/Users/huangxiaoxuan/Claude/cc-insight/docs/superpowers/plans/2026-03-27-cc-insight-implementation.md
-```
-
-每个 Task commit 后调用 `superpowers:requesting-code-review`，按审查结果修复后再进入下一个 Task。
-
-### 任务顺序（全部待执行）
+### 待完成
 
 | 阶段 | Tasks | 说明 |
 |------|-------|------|
-| 阶段 1：基础设施 | 1.1 → 1.2 → 1.3 | 目录结构、package.json、config.js |
-| 阶段 2：数据层 | 2.1 → 2.2 → 2.3 → 2.4 | DB Schema、JSONL Parser、SKILL.md Parser、安全扫描 |
-| 阶段 3：索引层 | 3.1 → 3.2 → 3.3 | DB 查询函数、全量索引器、文件监听 |
-| 阶段 4：服务层 | 4.1 → 4.2 | API 路由、HTTP + WebSocket 服务 |
-| 阶段 5：前端框架 | 5.1 → 5.2 → 5.3 → 5.4 | HTML 主框架、主题切换、App 主入口、主题持久化 |
-| 阶段 6：使用概览 | 6.1 → 6.2 → 6.3 → 6.4 | 指标卡片、热力图、24H 分布图、Insights 面板 |
-| 阶段 7：Skill 管理 | 7.1 → 7.2 → 7.3 → 7.4 → 7.5 | 概览卡、Top 5 + 从未使用、完整列表、删除、批量清理 |
-| 阶段 8：CLI | 8.1 → 8.2 | CLI 入口、首次启动进度屏 |
-| 阶段 9：文档 | 9.1 → 9.2 | 英文 README、中文 README |
+| 阶段 9：文档 | 9.1 → 9.2 | README.md（英文）+ README.zh.md（中文） |
 
-### 开发前准备
+### 运行方式
 
-1. `cd /Users/huangxiaoxuan/Claude/cc-insight && git init`（项目目录尚未初始化 git）
-2. 确认 Node.js 20+ 已安装：`node --version`
-3. 调用 `superpowers:executing-plans` 加载执行规范
+```bash
+cd /Users/huangxiaoxuan/Claude/cc-insight
+node bin/cc-insight.js
+# 浏览器自动打开 http://127.0.0.1:3847
+```
+
+### 已知问题（见 docs/cc-insight-backlog.md）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| B1 | silent_days 全部范围返回异常大值 | 待修复 |
+| B2 | Skills 页 useCount 全为 0 | 待修复（需解析 Skill 调用参数） |
+| B3 | 内容区下方留白 | 待修复 |
 
 ---
 

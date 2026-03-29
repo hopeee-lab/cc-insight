@@ -62,7 +62,7 @@ export async function renderOverview(container, range) {
   container.innerHTML = `
     ${rangeFilter(range)}
     ${statsCards(overview)}
-    <div class="split">
+    <div class="split" style="flex:1;min-height:0;">
       <div class="split-left">
         <div id="insights-panel"></div>
       </div>

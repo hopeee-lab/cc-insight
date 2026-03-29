@@ -63,11 +63,17 @@ export function getPeakPeriod({ after }) {
 
 export function getSilentDays({ after }) {
   const db = getDb()
+  // 当 after=0（全部范围）时，以最早 session 时间为起点，避免从 1970 年算起
+  let startMs = after
+  if (!startMs) {
+    const earliest = db.prepare('SELECT MIN(start_time) as t FROM sessions').get()
+    startMs = earliest?.t ?? Date.now()
+  }
   const activeDays = new Set(
     db.prepare("SELECT DISTINCT date(start_time / 1000, 'unixepoch') as d FROM sessions WHERE start_time >= ?")
-      .all(after).map(r => r.d)
+      .all(startMs).map(r => r.d)
   )
-  const afterDate = new Date(after)
+  const afterDate = new Date(startMs)
   const today = new Date()
   let silent = 0
   for (let d = new Date(afterDate); d <= today; d.setDate(d.getDate() + 1)) {
