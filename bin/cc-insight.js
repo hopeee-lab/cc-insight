@@ -17,6 +17,10 @@ async function main() {
 
   const alreadyIndexed = getMeta('last_full_index')
 
+  // 先打开浏览器，等待 WS 连接建立后再推送进度
+  await open(url)
+  if (!alreadyIndexed) await new Promise(r => setTimeout(r, 1500))
+
   if (!alreadyIndexed) {
     console.log('首次启动，建立索引中...')
     await runFullIndex((pct) => {
@@ -31,8 +35,6 @@ async function main() {
   }
 
   startWatcher(() => srv.sendRefresh())
-
-  await open(url)
 
   process.on('SIGINT', () => {
     console.log('\nCC Insight stopped.')

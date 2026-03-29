@@ -182,8 +182,8 @@ const SOURCE_LABEL = { downloaded: '下载', self: '自建' }
 
 function fmtDate(iso) {
   if (!iso) return '—'
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  const cst = new Date(new Date(iso).getTime() + 8 * 3600_000)
+  return `${cst.getUTCFullYear()}-${String(cst.getUTCMonth()+1).padStart(2,'0')}-${String(cst.getUTCDate()).padStart(2,'0')}`
 }
 
 function isDust(t) {
@@ -240,7 +240,9 @@ function toolCard(t) {
     </div>`
 }
 
-export function buildToolsListHtml(tools) {
+const PAGE_SIZE = 10
+
+export function buildToolsListHtml(tools, page = 0) {
   if (tools.length === 0) {
     return `<div style="color:var(--muted);font-size:14px;padding:20px 0;text-align:center;">暂无工具数据</div>`
   }
@@ -260,37 +262,34 @@ export function buildToolsListHtml(tools) {
         padding:4px 10px;font-size:14px;border-radius:3px;font-family:var(--font);
         color:${i===0?'var(--text)':'var(--muted)'};">${tab.label}</button>`).join('')
 
+  const totalPages = Math.ceil(tools.length / PAGE_SIZE)
+  const paged = tools.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  const paginationHtml = totalPages > 1 ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;
+      padding-top:10px;margin-top:auto;border-top:1px solid var(--border);">
+      <button class="page-btn" data-dir="-1"
+        style="background:transparent;border:1px solid var(--border);color:var(--muted);
+          border-radius:3px;padding:3px 10px;font-size:14px;cursor:pointer;font-family:var(--font);
+          ${page === 0 ? 'opacity:0.3;pointer-events:none;' : ''}">上一页</button>
+      <span style="font-size:14px;color:var(--muted);">${page + 1} / ${totalPages}</span>
+      <button class="page-btn" data-dir="1"
+        style="background:transparent;border:1px solid var(--border);color:var(--muted);
+          border-radius:3px;padding:3px 10px;font-size:14px;cursor:pointer;font-family:var(--font);
+          ${page >= totalPages - 1 ? 'opacity:0.3;pointer-events:none;' : ''}">下一页</button>
+    </div>` : ''
+
   return `
     <div class="card" style="height:100%;display:flex;flex-direction:column;">
       <div class="section-title" style="margin-bottom:8px;">全部工具</div>
       <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;">${tabHtml}</div>
-      <div id="tools-card-list" style="overflow-y:auto;flex:1;">
-        ${tools.map(toolCard).join('')}
+      <div id="tools-card-list" style="flex:1;overflow-y:auto;">
+        ${paged.map(toolCard).join('')}
       </div>
+      ${paginationHtml}
     </div>`
 }
 
-export function bindFilterTabs(container) {
-  container.querySelectorAll('.filter-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      container.querySelectorAll('.filter-tab').forEach(b => {
-        b.style.color = 'var(--muted)'
-        b.style.background = 'transparent'
-      })
-      btn.style.color = 'var(--text)'
-      btn.style.background = 'var(--bg3)'
-
-      const filter = btn.dataset.filter
-      container.querySelectorAll('.tool-card').forEach(card => {
-        const match =
-          filter === 'all'  ? true :
-          filter === 'dust' ? card.dataset.dust === 'true' :
-          card.dataset.type === filter
-        card.style.display = match ? '' : 'none'
-      })
-    })
-  })
-}
 
 export function bindDeleteButtons(container, onDeleted) {
   container.querySelectorAll('.del-btn').forEach(btn => {
@@ -319,9 +318,42 @@ export function bindDeleteButtons(container, onDeleted) {
 }
 
 function renderToolsList(el, tools, range, onDeleted) {
-  el.innerHTML = buildToolsListHtml(tools)
-  bindFilterTabs(el)
-  bindDeleteButtons(el, onDeleted)
+  let currentFilter = 'all'
+  let currentPage = 0
+
+  function filtered() {
+    if (currentFilter === 'all')  return tools
+    if (currentFilter === 'dust') return tools.filter(isDust)
+    return tools.filter(t => t.type === currentFilter)
+  }
+
+  function render() {
+    el.innerHTML = buildToolsListHtml(filtered(), currentPage)
+    // 筛选 tab 高亮
+    el.querySelectorAll('.filter-tab').forEach(btn => {
+      const active = btn.dataset.filter === currentFilter
+      btn.style.color = active ? 'var(--text)' : 'var(--muted)'
+      btn.style.background = active ? 'var(--bg3)' : 'transparent'
+    })
+    // tab 点击
+    el.querySelectorAll('.filter-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentFilter = btn.dataset.filter
+        currentPage = 0
+        render()
+      })
+    })
+    // 翻页
+    el.querySelectorAll('.page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentPage += parseInt(btn.dataset.dir)
+        render()
+      })
+    })
+    bindDeleteButtons(el, onDeleted)
+  }
+
+  render()
 }
 
 // ── RECOMMENDATIONS 面板 ──

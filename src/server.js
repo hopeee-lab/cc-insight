@@ -27,6 +27,15 @@ export function createAppServer() {
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'))
   })
 
+  // 当前进度状态（新客户端连接时补发）
+  let _lastProgress = null  // null = 未开始 / 已完成
+
+  wss.on('connection', (ws) => {
+    if (_lastProgress !== null && _lastProgress < 100) {
+      ws.send(JSON.stringify({ type: 'progress', pct: _lastProgress }))
+    }
+  })
+
   // 广播数据更新给所有客户端
   function broadcast(msg) {
     const payload = JSON.stringify(msg)
@@ -37,11 +46,14 @@ export function createAppServer() {
 
   // 进度推送（首次建库时使用）
   function sendProgress(pct) {
+    _lastProgress = pct
     broadcast({ type: 'progress', pct })
+    if (pct >= 100) _lastProgress = null
   }
 
   // 数据更新推送（watcher 触发时使用）
   function sendRefresh() {
+    _lastProgress = null
     broadcast({ type: 'refresh' })
   }
 

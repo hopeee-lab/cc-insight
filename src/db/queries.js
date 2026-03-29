@@ -45,14 +45,14 @@ export function getAvgDailyDurationSec({ after }) {
   const db = getDb()
   const total = getTotalDurationSec({ after })
   const days = db.prepare(
-    "SELECT COUNT(DISTINCT date(start_time / 1000, 'unixepoch')) as n FROM sessions WHERE start_time >= ?"
+    "SELECT COUNT(DISTINCT date(start_time / 1000, 'unixepoch', '+8 hours')) as n FROM sessions WHERE start_time >= ?"
   ).get(after).n
   return days > 0 ? Math.round(total / days) : 0
 }
 
 export function getPeakPeriod({ after }) {
   const rows = getDb().prepare(`
-    SELECT strftime('%H', start_time / 1000, 'unixepoch') as hour, COUNT(*) as n
+    SELECT strftime('%H', start_time / 1000, 'unixepoch', '+8 hours') as hour, COUNT(*) as n
     FROM sessions WHERE start_time >= ?
     GROUP BY hour ORDER BY n DESC LIMIT 1
   `).get(after)
@@ -70,7 +70,7 @@ export function getSilentDays({ after }) {
     startMs = earliest?.t ?? Date.now()
   }
   const activeDays = new Set(
-    db.prepare("SELECT DISTINCT date(start_time / 1000, 'unixepoch') as d FROM sessions WHERE start_time >= ?")
+    db.prepare("SELECT DISTINCT date(start_time / 1000, 'unixepoch', '+8 hours') as d FROM sessions WHERE start_time >= ?")
       .all(startMs).map(r => r.d)
   )
   const afterDate = new Date(startMs)
@@ -85,7 +85,7 @@ export function getSilentDays({ after }) {
 
 export function getHeatmapData({ after }) {
   return getDb().prepare(`
-    SELECT date(start_time / 1000, 'unixepoch') as day, COUNT(*) as count
+    SELECT date(start_time / 1000, 'unixepoch', '+8 hours') as day, COUNT(*) as count
     FROM sessions WHERE start_time >= ?
     GROUP BY day ORDER BY day
   `).all(after)
@@ -93,7 +93,7 @@ export function getHeatmapData({ after }) {
 
 export function get24hDistribution({ after }) {
   return getDb().prepare(`
-    SELECT strftime('%H', start_time / 1000, 'unixepoch') as hour, COUNT(*) as count
+    SELECT strftime('%H', start_time / 1000, 'unixepoch', '+8 hours') as hour, COUNT(*) as count
     FROM sessions WHERE start_time >= ?
     GROUP BY hour ORDER BY hour
   `).all(after)
