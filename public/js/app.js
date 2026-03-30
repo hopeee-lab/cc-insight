@@ -32,13 +32,15 @@ function connectWS() {
 
     if (msg.type === 'refresh') {
       document.getElementById('progress-screen').classList.add('hidden')
-      renderView(currentView)
+      // 重新检测按钮状态重置
+      const btn = document.getElementById('empty-reindex-btn')
+      if (btn) { btn.textContent = '重新检测'; btn.disabled = false }
+      checkStatusAndRender()
     }
 
     if (msg.type === 'ready') {
       document.getElementById('progress-screen').classList.add('hidden')
-      document.getElementById('app').style.display = ''
-      renderView(currentView)
+      checkStatusAndRender()
     }
   }
 
@@ -65,10 +67,49 @@ export function setRange(range) {
   renderView(currentView)
 }
 
+// ── 状态检测 & 空视图 ──
+async function checkStatusAndRender() {
+  const res = await fetch('/api/status')
+  const { hasClaude, hasData, scanPaths } = await res.json()
+
+  const elNoClaude = document.getElementById('empty-no-claude')
+  const elNoData   = document.getElementById('empty-no-data')
+  const elApp      = document.getElementById('app')
+
+  // 重置所有视图
+  elNoClaude.style.display = 'none'
+  elNoData.style.display   = 'none'
+  elApp.style.display      = 'none'
+
+  if (!hasClaude) {
+    elNoClaude.style.display = 'flex'
+    return
+  }
+
+  if (!hasData) {
+    document.getElementById('empty-scan-paths').textContent =
+      '检测路径：' + scanPaths.join('、')
+    elNoData.style.display = 'flex'
+    return
+  }
+
+  elApp.style.display = ''
+  renderView(currentView)
+}
+
 // ── 初始化 ──
 document.addEventListener('DOMContentLoaded', async () => {
   await initTheme()
   connectWS()
+
+  // 重新检测按钮
+  document.getElementById('empty-reindex-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget
+    btn.textContent = '检测中…'
+    btn.disabled = true
+    await fetch('/api/reindex', { method: 'POST' })
+    // 结果通过 WS refresh 事件触发，不需要在这里轮询
+  })
 
   // 侧边栏导航
   document.querySelectorAll('#tab-group .tab-btn').forEach(btn => {

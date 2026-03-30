@@ -78,6 +78,13 @@ function findAllTools(claudeDir) {
   return tools
 }
 
+// 返回所有正在扫描的目录列表（用于空视图展示检测路径）
+export function getScanPaths() {
+  const claudeDir = getClaudeDir()
+  const dirs = [path.join(claudeDir, 'projects'), ...getExtraSessionDirs()]
+  return dirs
+}
+
 export async function indexJsonlFile(filePath) {
   const result = parseJsonlFile(filePath)
   if (!result) return

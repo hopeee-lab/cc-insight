@@ -11,6 +11,7 @@ import {
 } from './db/queries.js'
 import { getDb } from './db/db.js'
 import { getConfigPath, getAppDir, getClaudeDir } from './config.js'
+import { runFullIndex, getScanPaths } from './indexer.js'
 
 // ── 工具路径校验（导出供测试） ──
 const TYPE_DIR = {
@@ -32,7 +33,7 @@ export function validateToolPath(name, type, claudeDir = getClaudeDir()) {
   return target
 }
 
-export function createRouter() {
+export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} } = {}) {
   const router = Router()
 
   // 将时间范围字符串转换为 timestamp（毫秒）
@@ -43,6 +44,28 @@ export function createRouter() {
     if (range === '90d') return now - 90 * 86400 * 1000
     return 0 // 'all'
   }
+
+  // --- 状态检测 & 重新索引 ---
+  router.get('/api/status', (req, res) => {
+    const claudeDir = getClaudeDir()
+    const hasClaude = fs.existsSync(claudeDir)
+    const hasData   = getSessionCount({ after: 0 }) > 0
+    const scanPaths = getScanPaths()
+    res.json({ hasClaude, hasData, scanPaths })
+  })
+
+  let _reindexing = false
+  router.post('/api/reindex', async (req, res) => {
+    if (_reindexing) return res.json({ ok: false, reason: 'already running' })
+    _reindexing = true
+    res.json({ ok: true })
+    try {
+      await runFullIndex(pct => sendProgress(pct))
+    } finally {
+      _reindexing = false
+      sendRefresh()
+    }
+  })
 
   // --- 主题 1：使用概览 ---
   router.get('/api/overview', (req, res) => {

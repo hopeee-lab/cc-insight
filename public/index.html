@@ -142,6 +142,30 @@
 </head>
 <body>
 
+<!-- 场景2：未检测到 Claude Code -->
+<div id="empty-no-claude" style="display:none;position:fixed;inset:0;
+  display:none;align-items:center;justify-content:center;
+  background:var(--bg);flex-direction:column;gap:12px;text-align:center;padding:40px;">
+  <div style="font-size:20px;font-weight:700;color:var(--text);">未检测到 Claude Code</div>
+  <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+    使用 Claude Code 后<br>即可生成你的使用画像
+  </div>
+</div>
+
+<!-- 场景1：有 Claude，但暂无数据 -->
+<div id="empty-no-data" style="display:none;position:fixed;inset:0;
+  align-items:center;justify-content:center;
+  background:var(--bg);flex-direction:column;gap:12px;text-align:center;padding:40px;">
+  <div style="font-size:20px;font-weight:700;color:var(--text);">未检测到 Claude Code 使用记录</div>
+  <div style="font-size:13px;color:var(--muted);">请先使用一段时间再查看</div>
+  <div id="empty-scan-paths" style="font-size:12px;color:var(--muted);margin-top:4px;"></div>
+  <button id="empty-reindex-btn" style="margin-top:8px;background:transparent;
+    border:1px solid var(--border);color:var(--muted);border-radius:4px;
+    padding:6px 16px;font-size:13px;cursor:pointer;font-family:var(--font);">
+    重新检测
+  </button>
+</div>
+
 <!-- 首次建库进度屏 -->
 <div id="progress-screen">
   <div class="progress-title">CC Insight — 正在建立索引</div>

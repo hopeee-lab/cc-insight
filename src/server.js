@@ -13,34 +13,16 @@ export function createAppServer() {
   const httpServer = createServer(app)
   const wss = new WebSocketServer({ server: httpServer })
 
-  // JSON body 解析（POST /api/config 等需要）
+  // JSON body 解析
   app.use(express.json())
 
   // 静态文件
   app.use(express.static(path.join(__dirname, '..', 'public')))
 
-  // API 路由
-  app.use(createRouter())
+  // 当前进度状态
+  let _lastProgress = null
 
-  // 首页（SPA fallback）
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'))
-  })
-
-  // 当前进度状态（新客户端连接时补发）
-  let _lastProgress = null  // null = 未开始 / 已完成
-
-  wss.on('connection', (ws) => {
-    if (_lastProgress !== null && _lastProgress < 100) {
-      // 正在索引中：发当前进度
-      ws.send(JSON.stringify({ type: 'progress', pct: _lastProgress }))
-    } else {
-      // 已完成或未索引：立即告知客户端可以显示主界面
-      ws.send(JSON.stringify({ type: 'ready' }))
-    }
-  })
-
-  // 广播数据更新给所有客户端
+  // 广播
   function broadcast(msg) {
     const payload = JSON.stringify(msg)
     for (const client of wss.clients) {
@@ -48,18 +30,32 @@ export function createAppServer() {
     }
   }
 
-  // 进度推送（首次建库时使用）
   function sendProgress(pct) {
     _lastProgress = pct
     broadcast({ type: 'progress', pct })
     if (pct >= 100) _lastProgress = null
   }
 
-  // 数据更新推送（watcher 触发时使用）
   function sendRefresh() {
     _lastProgress = null
     broadcast({ type: 'refresh' })
   }
+
+  // API 路由（先于 SPA fallback 注册）
+  app.use(createRouter({ sendProgress, sendRefresh }))
+
+  // SPA fallback
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'))
+  })
+
+  wss.on('connection', (ws) => {
+    if (_lastProgress !== null && _lastProgress < 100) {
+      ws.send(JSON.stringify({ type: 'progress', pct: _lastProgress }))
+    } else {
+      ws.send(JSON.stringify({ type: 'ready' }))
+    }
+  })
 
   function listen(port = 3847) {
     return new Promise((resolve) => {
