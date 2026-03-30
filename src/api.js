@@ -47,10 +47,10 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
 
   // --- 状态检测 & 重新索引 ---
   router.get('/api/status', (req, res) => {
+    const scanPaths = getScanPaths()
     const claudeDir = getClaudeDir()
     const hasClaude = fs.existsSync(claudeDir)
     const hasData   = getSessionCount({ after: 0 }) > 0
-    const scanPaths = getScanPaths()
     res.json({ hasClaude, hasData, scanPaths })
   })
 
