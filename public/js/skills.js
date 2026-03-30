@@ -52,7 +52,7 @@ function buildOverviewCards(tools, usageMap) {
   return `<div class="grid-3" style="margin-bottom:14px;">
     ${types.map(type => {
       const all = tools.filter(t => t.type === type)
-      const used = all.filter(t => (usageMap[t.name]?.useCount ?? 0) > 0).length
+      const used = all.filter(t => (usageMap[t.name]?.allTimeUseCount ?? 0) > 0).length
       return usageCard(labels[type], colors[type], all.length, used)
     }).join('')}
   </div>`
@@ -149,7 +149,7 @@ export function buildTopToolsHtml(tools, range, page = 0) {
   return `
     <div class="card" style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div class="section-title">近 ${rangeLabel[range] ?? range} 最常用</div>
+        <div class="section-title">${range === 'all' ? '全部时间' : `近 ${rangeLabel[range]}`} 最常用</div>
         ${totalPages > 1 ? pageBtns(page, totalPages, 'top-prev-btn', 'top-next-btn') : ''}
       </div>
       <div>${rows}</div>
@@ -158,7 +158,8 @@ export function buildTopToolsHtml(tools, range, page = 0) {
 
 // ── 从未使用列表 ──
 export function buildUnusedToolsHtml(tools, page = 0) {
-  const unused = tools.filter(t => (t.useCount ?? 0) === 0)
+  // 只统计从未使用过的（全时段），闲置工具不算在内
+  const unused = tools.filter(t => (t.allTimeUseCount ?? 0) === 0)
   if (unused.length === 0) return null
 
   const totalPages = Math.ceil(unused.length / LIST_PAGE_SIZE)
@@ -336,15 +337,14 @@ function toolCard(t, range = '7d') {
         <span style="width:20px;height:20px;border-radius:3px;background:${badge.color}22;
           color:${badge.color};font-size:12px;font-weight:bold;flex-shrink:0;
           display:flex;align-items:center;justify-content:center;">${badge.label}</span>
-        <span style="font-size:14px;font-weight:600;overflow:hidden;
-          text-overflow:ellipsis;white-space:nowrap;max-width:180px;" title="${t.name}">${t.name}</span>
+        <span style="font-size:14px;font-weight:600;" title="${t.name}">${t.name}</span>
         ${typeTag}${sourceTag}${secTag}
         <div style="flex:1;"></div>
         ${t.type === 'plugin' ? `
         <button class="detail-btn" data-name="${t.name}" data-range="${range}"
           style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);
             border-radius:3px;padding:2px 8px;font-size:14px;cursor:pointer;
-            flex-shrink:0;font-family:var(--font);">技能明细</button>` : ''}
+            flex-shrink:0;font-family:var(--font);">技能</button>` : ''}
         <button class="del-btn" data-name="${t.name}" data-type="${t.type}"
           style="background:transparent;border:1px solid var(--red);color:var(--red);
             border-radius:3px;padding:2px 8px;font-size:14px;cursor:pointer;
@@ -369,7 +369,7 @@ function toolCard(t, range = '7d') {
           white-space:nowrap;min-width:0;text-align:right;">${pathStr}</div>
       </div>
 
-      <!-- 技能明细展开区（plugin 专用） -->
+      <!-- 技能展开区（plugin 专用） -->
       ${t.type === 'plugin' ? `<div class="subskill-panel" style="display:none;"></div>` : ''}
     </div>`
 }
@@ -419,8 +419,10 @@ export function buildToolsListHtml(allTools, displayTools, currentFilter, page =
 
   return `
     <div class="card" style="min-height:0;display:flex;flex-direction:column;">
-      <div class="section-title" style="margin-bottom:8px;">全部工具</div>
-      <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;">${tabHtml}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:4px;">
+        <div class="section-title">全部工具</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">${tabHtml}</div>
+      </div>
       <div id="tools-card-list">${bodyHtml}</div>
       ${paginationHtml}
     </div>`
@@ -486,7 +488,7 @@ function bindDetailButtons(container) {
       // 切换展开/收起
       if (panel.style.display !== 'none') {
         panel.style.display = 'none'
-        btn.textContent = '技能明细'
+        btn.textContent = '技能'
         btn.style.color = 'var(--cyan)'
         btn.style.borderColor = 'var(--cyan)'
         return

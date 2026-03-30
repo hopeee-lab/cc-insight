@@ -105,7 +105,7 @@ function renderHeatmap(el, data) {
   const map = Object.fromEntries(data.map(r => [r.day, r.count]))
   const max = Math.max(...Object.values(map), 1)
 
-  const CELL = 12   // 固定 cell 尺寸
+  const CELL = 12
   const GAP  = 3
   const LABEL_W = 28
 
@@ -120,14 +120,22 @@ function renderHeatmap(el, data) {
 
   const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', '']
 
-  function buildWeeks(numWeeks) {
+  // 计算容器能放多少周（页容量）
+  function calcPageSize(containerW) {
+    const usable = containerW - LABEL_W - GAP
+    return Math.max(4, Math.floor((usable + GAP) / (CELL + GAP)))
+  }
+
+  // 从今天往前倒推，生成所有天的数组（按周分组）
+  function buildAllWeeks() {
+    if (data.length === 0) return []
     const today = new Date()
-    const start = new Date(today)
-    start.setDate(today.getDate() - 7 * numWeeks)
-    start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
+    // 找最早有数据的那周的周一
+    const earliest = new Date(data[0].day)
+    earliest.setDate(earliest.getDate() - ((earliest.getDay() + 6) % 7))
 
     const weeks = []
-    let cur = new Date(start)
+    let cur = new Date(earliest)
     while (cur <= today) {
       const week = []
       for (let d = 0; d < 7; d++) {
@@ -140,10 +148,35 @@ function renderHeatmap(el, data) {
     return weeks
   }
 
-  function buildGrid(numWeeks) {
-    const weeks = buildWeeks(numWeeks)
-    const colWidth = CELL + GAP
-    return `
+  function buildGrid(pageSize, pageOffset) {
+    const allWeeks = buildAllWeeks()
+    const totalPages = Math.ceil(allWeeks.length / pageSize)
+    // pageOffset=0 表示最新一页（末尾），pageOffset=1 表示向前一页
+    const endIdx = allWeeks.length - pageOffset * pageSize
+    const startIdx = Math.max(0, endIdx - pageSize)
+    const weeks = allWeeks.slice(startIdx, endIdx)
+    const canPrev = endIdx < allWeeks.length   // 还有更旧的数据
+    const canNext = startIdx > 0               // 还有更新的数据（不太可能，保留逻辑）
+
+    const pageBtnStyle = (enabled) =>
+      `background:transparent;border:none;cursor:${enabled ? 'pointer' : 'default'};
+       color:var(--muted);font-size:14px;padding:0 4px;font-family:var(--font);
+       opacity:${enabled ? 1 : 0.3};`
+
+    const paginationHtml = totalPages > 1 ? `
+      <div style="display:flex;align-items:center;gap:2px;">
+        <button class="heatmap-prev" style="${pageBtnStyle(canPrev)}">&lt;</button>
+        <span style="font-size:12px;color:var(--muted);min-width:28px;text-align:center;">
+          ${totalPages - pageOffset}/${totalPages}
+        </span>
+        <button class="heatmap-next" style="${pageBtnStyle(canNext)}">&gt;</button>
+      </div>` : ''
+
+    return { html: `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:11px;color:var(--muted);">${weeks[0]?.[0]?.day ?? ''}</span>
+        ${paginationHtml}
+      </div>
       <div style="display:flex;gap:${GAP}px;">
         <div style="display:flex;flex-direction:column;gap:${GAP}px;width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
           ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
@@ -164,27 +197,35 @@ function renderHeatmap(el, data) {
         ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
           `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
         <span style="font-size:11px;color:var(--muted);">多</span>
-      </div>`
+      </div>`, canPrev, canNext, totalPages }
   }
 
-  // 根据容器宽度计算能放多少周
-  function calcWeeks(containerW) {
-    const usable = containerW - LABEL_W - GAP
-    return Math.max(4, Math.floor((usable + GAP) / (CELL + GAP)))
+  let pageSize = 16
+  let pageOffset = 0   // 0 = 最新一页
+
+  function render() {
+    const { html, canPrev, canNext } = buildGrid(pageSize, pageOffset)
+    el.innerHTML = html
+    el.querySelector('.heatmap-prev')?.addEventListener('click', () => {
+      if (canPrev) { pageOffset++; render() }
+    })
+    el.querySelector('.heatmap-next')?.addEventListener('click', () => {
+      if (canNext) { pageOffset--; render() }
+    })
   }
 
-  el.innerHTML = buildGrid(16)
+  render()
 
   if (typeof ResizeObserver !== 'undefined') {
-    let init = true
     const ro = new ResizeObserver(entries => {
       const w = entries[0].contentRect.width
       if (w < 10) return
-      const numWeeks = calcWeeks(w)
-      if (init || el._lastWeeks !== numWeeks) {
-        el._lastWeeks = numWeeks
-        el.innerHTML = buildGrid(numWeeks)
-        init = false
+      const newSize = calcPageSize(w)
+      if (el._lastPageSize !== newSize) {
+        el._lastPageSize = newSize
+        pageSize = newSize
+        pageOffset = 0
+        render()
       }
     })
     ro.observe(el)
@@ -226,7 +267,7 @@ function renderDist(el, data) {
 // ── Insights ──
 const INSIGHT_CONFIG = {
   best_day: (d) => ({
-    icon: '🔥', color: 'var(--green)', title: '最高产的一天',
+    icon: '🔥', color: 'var(--green)', title: '最高产',
     body: `${d.day} 完成了 <span class="green">${d.count} 个 session</span>`
   }),
   silent_days: (d) => ({

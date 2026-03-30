@@ -81,7 +81,9 @@ export function createRouter() {
     const after = rangeToAfter(req.query.range ?? '7d')
     const tools = getAllTools()
     const usageStats = getToolUsageStats({ after })
+    const allTimeStats = getToolUsageStats({ after: 0 })
     const statsMap = Object.fromEntries(usageStats.map(s => [s.toolName, s]))
+    const allTimeMap = Object.fromEntries(allTimeStats.map(s => [s.toolName, s]))
     const claudeDir = getClaudeDir()
     const result = tools.map(t => {
       // 推算本地路径
@@ -105,8 +107,9 @@ export function createRouter() {
         securityScanResult: t.security_scan_result,
         localPath,
         // 使用统计（来自 tool_invocations 聚合）
-        useCount:   statsMap[t.name]?.useCount   ?? 0,
-        lastUsedAt: statsMap[t.name]?.lastUsedAt ?? null,
+        useCount:         statsMap[t.name]?.useCount   ?? 0,
+        lastUsedAt:       statsMap[t.name]?.lastUsedAt ?? null,
+        allTimeUseCount:  allTimeMap[t.name]?.useCount  ?? 0,
       }
     })
     res.json(result)

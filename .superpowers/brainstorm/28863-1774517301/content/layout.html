@@ -1,0 +1,96 @@
+<h2>一期布局方案</h2>
+<p class="subtitle">选择 cc-insight 的整体页面结构</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="A" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#111;border-radius:6px;font-family:monospace;font-size:12px;">
+      <div style="display:flex;height:180px;gap:8px;">
+        <div style="width:120px;background:#1a1a2e;border-radius:4px;padding:10px;color:#4ade80;font-size:11px;">
+          <div style="color:#888;margin-bottom:8px;font-size:10px;">CC INSIGHT</div>
+          <div style="padding:4px 6px;background:#4ade8020;border-radius:3px;margin-bottom:4px;color:#4ade80;">概览</div>
+          <div style="padding:4px 6px;margin-bottom:4px;color:#555;">Skill 列表</div>
+          <div style="padding:4px 6px;color:#555;">热力图</div>
+        </div>
+        <div style="flex:1;background:#0d1117;border-radius:4px;padding:10px;">
+          <div style="color:#4ade80;font-size:11px;margin-bottom:8px;">概览面板</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+            <div style="background:#1a1a2e;border-radius:3px;padding:6px;text-align:center;">
+              <div style="color:#4ade80;font-size:16px;font-weight:bold;">142</div>
+              <div style="color:#555;font-size:9px;">Sessions</div>
+            </div>
+            <div style="background:#1a1a2e;border-radius:3px;padding:6px;text-align:center;">
+              <div style="color:#22d3ee;font-size:16px;font-weight:bold;">38h</div>
+              <div style="color:#555;font-size:9px;">使用时长</div>
+            </div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:3px;height:50px;display:flex;align-items:center;justify-content:center;color:#555;font-size:9px;">热力图区域</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · 左侧导航栏</h3>
+      <p>固定侧边栏切换模块，内容区全屏展示。类似 Grafana / Linear 风格，模块多时扩展性好。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="B" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#111;border-radius:6px;font-family:monospace;font-size:12px;">
+      <div style="height:180px;background:#0d1117;border-radius:4px;padding:10px;">
+        <div style="display:flex;gap:12px;margin-bottom:10px;border-bottom:1px solid #222;padding-bottom:8px;">
+          <div style="color:#4ade80;font-size:11px;border-bottom:2px solid #4ade80;padding-bottom:6px;margin-bottom:-9px;">概览</div>
+          <div style="color:#555;font-size:11px;">Skills</div>
+          <div style="color:#555;font-size:11px;">热力图</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+          <div style="background:#1a1a2e;border-radius:3px;padding:6px;text-align:center;">
+            <div style="color:#4ade80;font-size:16px;font-weight:bold;">142</div>
+            <div style="color:#555;font-size:9px;">Sessions</div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:3px;padding:6px;text-align:center;">
+            <div style="color:#22d3ee;font-size:16px;font-weight:bold;">38h</div>
+            <div style="color:#555;font-size:9px;">使用时长</div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:3px;padding:6px;text-align:center;">
+            <div style="color:#a78bfa;font-size:16px;font-weight:bold;">27</div>
+            <div style="color:#555;font-size:9px;">Skills</div>
+          </div>
+        </div>
+        <div style="background:#1a1a2e;border-radius:3px;height:60px;display:flex;align-items:center;justify-content:center;color:#555;font-size:9px;">热力图区域</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 顶部标签页</h3>
+      <p>Tab 切换三个模块，内容区更宽敞。类似浏览器 DevTools 风格，适合宽屏展示。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="C" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#111;border-radius:6px;font-family:monospace;font-size:12px;">
+      <div style="height:180px;background:#0d1117;border-radius:4px;padding:10px;overflow:hidden;">
+        <div style="color:#4ade80;font-size:10px;margin-bottom:6px;letter-spacing:1px;">CC INSIGHT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:6px;">
+          <div style="background:#1a1a2e;border-radius:3px;padding:5px;text-align:center;">
+            <div style="color:#4ade80;font-size:14px;font-weight:bold;">142</div>
+            <div style="color:#555;font-size:8px;">Sessions</div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:3px;padding:5px;text-align:center;">
+            <div style="color:#22d3ee;font-size:14px;font-weight:bold;">38h</div>
+            <div style="color:#555;font-size:8px;">时长</div>
+          </div>
+          <div style="background:#1a1a2e;border-radius:3px;padding:5px;text-align:center;">
+            <div style="color:#a78bfa;font-size:14px;font-weight:bold;">27</div>
+            <div style="color:#555;font-size:8px;">Skills</div>
+          </div>
+        </div>
+        <div style="background:#1a1a2e;border-radius:3px;height:35px;margin-bottom:5px;display:flex;align-items:center;justify-content:center;color:#555;font-size:8px;">热力图</div>
+        <div style="background:#1a1a2e;border-radius:3px;height:45px;display:flex;align-items:center;justify-content:center;color:#555;font-size:8px;">Skill 列表（继续向下滚动）</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · 单页滚动</h3>
+      <p>所有模块纵向排列，向下滚动查看。类似 GitHub Profile 风格，简单直接，适合分享截图。</p>
+    </div>
+  </div>
+
+</div>
