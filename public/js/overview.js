@@ -126,17 +126,21 @@ function renderHeatmap(el, data) {
     return Math.max(4, Math.floor((usable + GAP) / (CELL + GAP)))
   }
 
-  // 从今天往前倒推，生成所有天的数组（按周分组）
-  function buildAllWeeks() {
-    if (data.length === 0) return []
+  // 始终生成 pageSize 列，通过 pageOffset 向历史平移
+  function buildGrid(pageSize, pageOffset) {
     const today = new Date()
-    // 找最早有数据的那周的周一
-    const earliest = new Date(data[0].day)
-    earliest.setDate(earliest.getDate() - ((earliest.getDay() + 6) % 7))
+    // 当前页的末尾锚点：pageOffset=0 为今天，每页向前推 pageSize 周
+    const endAnchor = new Date(today)
+    endAnchor.setDate(endAnchor.getDate() - pageOffset * pageSize * 7)
+
+    // 起始锚点：末尾往前 pageSize 周，对齐到周一
+    const startAnchor = new Date(endAnchor)
+    startAnchor.setDate(endAnchor.getDate() - pageSize * 7)
+    startAnchor.setDate(startAnchor.getDate() - ((startAnchor.getDay() + 6) % 7))
 
     const weeks = []
-    let cur = new Date(earliest)
-    while (cur <= today) {
+    let cur = new Date(startAnchor)
+    while (cur <= endAnchor) {
       const week = []
       for (let d = 0; d < 7; d++) {
         const key = cur.toISOString().slice(0, 10)
@@ -145,30 +149,20 @@ function renderHeatmap(el, data) {
       }
       weeks.push(week)
     }
-    return weeks
-  }
 
-  function buildGrid(pageSize, pageOffset) {
-    const allWeeks = buildAllWeeks()
-    const totalPages = Math.ceil(allWeeks.length / pageSize)
-    // pageOffset=0 表示最新一页（末尾），pageOffset=1 表示向前一页
-    const endIdx = allWeeks.length - pageOffset * pageSize
-    const startIdx = Math.max(0, endIdx - pageSize)
-    const weeks = allWeeks.slice(startIdx, endIdx)
-    const canPrev = endIdx < allWeeks.length   // 还有更旧的数据
-    const canNext = startIdx > 0               // 还有更新的数据（不太可能，保留逻辑）
+    // 是否有更早的数据
+    const viewStart = startAnchor.toISOString().slice(0, 10)
+    const canPrev = data.some(r => r.day < viewStart)
+    const canNext = pageOffset > 0
 
     const pageBtnStyle = (enabled) =>
       `background:transparent;border:none;cursor:${enabled ? 'pointer' : 'default'};
        color:var(--muted);font-size:14px;padding:0 4px;font-family:var(--font);
        opacity:${enabled ? 1 : 0.3};`
 
-    const paginationHtml = totalPages > 1 ? `
+    const paginationHtml = (canPrev || canNext) ? `
       <div style="display:flex;align-items:center;gap:2px;">
         <button class="heatmap-prev" style="${pageBtnStyle(canPrev)}">&lt;</button>
-        <span style="font-size:12px;color:var(--muted);min-width:28px;text-align:center;">
-          ${totalPages - pageOffset}/${totalPages}
-        </span>
         <button class="heatmap-next" style="${pageBtnStyle(canNext)}">&gt;</button>
       </div>` : ''
 
@@ -197,7 +191,7 @@ function renderHeatmap(el, data) {
         ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
           `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
         <span style="font-size:11px;color:var(--muted);">多</span>
-      </div>`, canPrev, canNext, totalPages }
+      </div>`, canPrev, canNext }
   }
 
   let pageSize = 16
