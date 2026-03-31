@@ -3,6 +3,7 @@ import { initTheme } from './theme.js'
 import { renderOverview } from './overview.js'
 import { renderSkills } from './skills.js'
 import { renderMcp } from './mcp.js'
+import { openPosterModal } from './poster.js'
 
 // 当前时间范围，全局共享
 export let currentRange = '7d'
@@ -111,8 +112,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 结果通过 WS refresh 事件触发，不需要在这里轮询
   })
 
-  // 侧边栏导航
+  // tab 导航
   document.querySelectorAll('#tab-group .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => renderView(btn.dataset.view))
+  })
+
+  // 海报按钮
+  document.getElementById('poster-btn')?.addEventListener('click', () => {
+    openPosterModal(currentRange)
   })
 })

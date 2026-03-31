@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // bin/cc-insight.js
 import { createAppServer } from '../src/server.js'
-import { runFullIndex } from '../src/indexer.js'
+import { runFullIndex, syncToolsOnly } from '../src/indexer.js'
 import { startWatcher } from '../src/watcher.js'
 import { getMeta } from '../src/db/db.js'
 import open from 'open'
@@ -16,6 +16,9 @@ async function main() {
   console.log(`\nCC Insight running → ${url}\n`)
 
   const alreadyIndexed = getMeta('last_full_index')
+
+  // 每次启动都同步工具（检测新安装/删除的 skill & plugin）
+  syncToolsOnly()
 
   // 先打开浏览器，等待 WS 连接建立后再推送进度
   await open(url)

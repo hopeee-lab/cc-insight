@@ -59,6 +59,9 @@ function buildOverviewCards(tools, usageMap) {
 }
 
 export async function renderSkills(container, range) {
+  // 保存滚动位置，避免 WS refresh 导致跳回顶部
+  const savedScroll = container.querySelector('.split-right')?.scrollTop ?? 0
+
   const tools = await fetch(`/api/tools?range=${range}`).then(r => r.json())
   const usageMap = Object.fromEntries(tools.map(t => [t.name, t]))
 
@@ -83,6 +86,12 @@ export async function renderSkills(container, range) {
   renderToolsList(document.getElementById('tools-list-panel'), tools, range,
     () => renderSkills(container, range))
   renderRecommendations(document.getElementById('recommendations-panel'), tools, container, range)
+
+  // 恢复滚动位置
+  if (savedScroll > 0) {
+    const splitRight = container.querySelector('.split-right')
+    if (splitRight) splitRight.scrollTop = savedScroll
+  }
 }
 
 // ── 颜色映射 ──
@@ -265,11 +274,7 @@ function toolCard(t, range = '7d') {
     background:${badge.color}18;color:${badge.color};border:1px solid ${badge.color}40;">
     ${(t.type ?? '').toUpperCase()}</span>`
 
-  const sourceTag = t.sourceType
-    ? `<span style="font-size:12px;padding:1px 6px;border-radius:3px;
-        background:var(--bg3);color:var(--muted);border:1px solid var(--border);">
-        ${SOURCE_LABEL[t.sourceType] ?? t.sourceType}</span>`
-    : ''
+  const sourceTag = ''
 
   const secTag = `<span style="font-size:12px;color:${secBadge.color};">${secBadge.text}</span>`
 

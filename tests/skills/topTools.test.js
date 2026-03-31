@@ -9,11 +9,11 @@ jest.unstable_mockModule('../../public/js/app.js', () => ({
 const { buildTopToolsHtml, buildUnusedToolsHtml } = await import('../../public/js/skills.js')
 
 const tools = [
-  { name: 'skill-vetter',    type: 'skill', useCount: 42, lastUsedAt: '2026-03-24T10:00:00Z', installedAt: '2026-01-10T00:00:00Z' },
-  { name: 'data-assistant',  type: 'agent', useCount: 31, lastUsedAt: '2026-03-25T09:00:00Z', installedAt: '2026-01-15T00:00:00Z' },
-  { name: 'multi-search',    type: 'skill', useCount: 18, lastUsedAt: '2026-03-20T08:00:00Z', installedAt: '2026-02-01T00:00:00Z' },
-  { name: 'keybindings-help',type: 'skill', useCount: 0,  lastUsedAt: null, installedAt: '2025-12-01T00:00:00Z' },
-  { name: 'unused-agent',    type: 'agent', useCount: 0,  lastUsedAt: null, installedAt: '2026-01-05T00:00:00Z' },
+  { name: 'skill-vetter',    type: 'skill', useCount: 42, allTimeUseCount: 42, lastUsedAt: '2026-03-24T10:00:00Z', installedAt: '2026-01-10T00:00:00Z' },
+  { name: 'data-assistant',  type: 'agent', useCount: 31, allTimeUseCount: 31, lastUsedAt: '2026-03-25T09:00:00Z', installedAt: '2026-01-15T00:00:00Z' },
+  { name: 'multi-search',    type: 'skill', useCount: 18, allTimeUseCount: 18, lastUsedAt: '2026-03-20T08:00:00Z', installedAt: '2026-02-01T00:00:00Z' },
+  { name: 'keybindings-help',type: 'skill', useCount: 0,  allTimeUseCount: 0,  lastUsedAt: null, installedAt: '2025-12-01T00:00:00Z' },
+  { name: 'unused-agent',    type: 'agent', useCount: 0,  allTimeUseCount: 0,  lastUsedAt: null, installedAt: '2026-01-05T00:00:00Z' },
 ]
 
 test('buildTopToolsHtml returns top 5 sorted by useCount', () => {

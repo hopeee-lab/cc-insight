@@ -51,6 +51,20 @@
     .topbar-spacer { flex: 1; }
     .topbar-tool  { color: var(--muted); font-size: 13px; flex-shrink: 0; }
 
+    /* ── 海报按钮 ── */
+    .poster-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); font-size: 13px; font-family: var(--font);
+      cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+    }
+    .poster-btn:hover {
+      border-color: var(--green); color: var(--green);
+      background: color-mix(in srgb, var(--green) 8%, transparent);
+    }
+    .poster-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
     /* Segmented tab */
     .tab-group {
       display: flex; gap: 2px;
@@ -103,8 +117,8 @@
 
     /* ── Split layout ── */
     .split { display: grid; grid-template-columns: 280px 1fr; gap: 12px; flex: 1; min-height: 0; overflow: hidden; }
-    .split-left { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 0; }
-    .split-right { min-height: 0; overflow-y: auto; }
+    .split-left { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 0; padding-bottom: 20px; }
+    .split-right { min-height: 0; overflow-y: auto; padding-bottom: 20px; }
 
     /* ── Section header ── */
     .section-header { display: flex; justify-content: space-between;
@@ -186,6 +200,13 @@
       <button class="tab-btn" data-view="mcp">MCP</button>
     </nav>
     <div class="topbar-spacer"></div>
+    <button class="poster-btn" id="poster-btn" title="生成分享海报">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="12" height="12" rx="1.5"/>
+        <path d="M8 5v6M5.5 7.5L8 5l2.5 2.5"/>
+      </svg>
+      生成海报
+    </button>
     <span class="topbar-tool">Claude Code</span>
   </header>
 

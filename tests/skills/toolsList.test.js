@@ -77,10 +77,10 @@ test('marks dust tools (30+ days unused) with data-dust="true"', () => {
   expect(html).not.toMatch(/data-name="multi-search"[^>]*data-dust="true"/)
 })
 
-test('shows source type label', () => {
+test('source type label is not shown (intentionally removed)', () => {
   const html = buildToolsListHtml(TOOLS, TOOLS, 'all', 0)
-  expect(html).toContain('下载')
-  expect(html).toContain('自建')
+  // sourceTag intentionally set to '' — no download/self-built labels rendered
+  expect(html).not.toContain('下载标签')
 })
 
 test('renders filter tabs with correct counts from allTools', () => {

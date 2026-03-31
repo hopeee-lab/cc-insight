@@ -266,13 +266,21 @@ const INSIGHT_CONFIG = {
   }),
   silent_days: (d) => ({
     icon: '😴', color: 'var(--red)', title: '静默期',
-    body: `当前时间段内有 <span class="red">${d.days} 天</span> 未使用 Claude Code`
+    body: `已连续 <span class="red">${d.days} 天</span> 未使用 Claude Code`
   }),
   habit: (d) => ({
     icon: d.label === '夜猫子' ? '🌙' : d.label === '早鸟' ? '🌅' : '💼',
     color: 'var(--amber)', title: `你是${d.label}`,
     body: `<span class="amber">${d.pct}%</span> 的 session 发生在对应时段`
   }),
+  avg_daily: (d) => {
+    const sec = d.avgSec ?? 0
+    const h = Math.floor(sec / 3600)
+    const m = Math.floor((sec % 3600) / 60)
+    const label = h > 0 ? `${h}h ${m}m` : `${m}m`
+    return { icon: '⏱️', color: 'var(--purple)', title: '日均时长',
+      body: `平均每天使用 <span class="purple">${label}</span>` }
+  },
   trend: (d) => ({
     icon: d.change > 0 ? '📈' : '📉',
     color: d.change > 0 ? 'var(--cyan)' : 'var(--red)',

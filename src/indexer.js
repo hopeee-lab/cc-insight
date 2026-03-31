@@ -33,46 +33,53 @@ function findAllTools(claudeDir) {
   const skillsDir = path.join(claudeDir, 'skills')
   if (fs.existsSync(skillsDir)) {
     for (const name of fs.readdirSync(skillsDir)) {
-      const skillMd = path.join(skillsDir, name, 'SKILL.md')
-      const stat = fs.statSync(path.join(skillsDir, name))
-      if (!stat.isDirectory()) continue
-      const meta = parseSkillMd(skillMd, name) ?? { name, description: '', type: 'skill', source: null }
-      const security = scanSkillSecurity(skillMd)
-      const toolType = ['skill', 'agent'].includes(meta.type) ? meta.type : 'skill'
-      const sourceType = meta.source ? 'downloaded' : 'self'
-      const sourceUrl  = meta.source ?? null
-      tools.push({ id: `${toolType}:${name}`, name: meta.name, type: toolType,
-        subtype: null, description: meta.description, sourceType, sourceUrl,
-        installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
-        securityScanResult: security })
+      try {
+        const skillPath = path.join(skillsDir, name)
+        const stat = fs.statSync(skillPath)
+        if (!stat.isDirectory()) continue
+        const skillMd = path.join(skillPath, 'SKILL.md')
+        const meta = parseSkillMd(skillMd, name) ?? { name, description: '', type: 'skill', source: null }
+        const security = scanSkillSecurity(skillMd)
+        const toolType = ['skill', 'agent'].includes(meta.type) ? meta.type : 'skill'
+        const sourceType = meta.source ? 'downloaded' : 'self'
+        const sourceUrl  = meta.source ?? null
+        tools.push({ id: `${toolType}:${name}`, name: meta.name, type: toolType,
+          subtype: null, description: meta.description, sourceType, sourceUrl,
+          installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
+          securityScanResult: security })
+      } catch {}
     }
   }
   // Plugins
   const pluginsDir = path.join(claudeDir, 'plugins', 'cache')
   if (fs.existsSync(pluginsDir)) {
     for (const marketplace of fs.readdirSync(pluginsDir)) {
-      const mDir = path.join(pluginsDir, marketplace)
-      if (!fs.statSync(mDir).isDirectory()) continue
-      const children = fs.readdirSync(mDir).filter(n =>
-        fs.statSync(path.join(mDir, n)).isDirectory()
-      )
-      if (children.length > 1) {
-        // 多子 plugin（如 knowledge-work-plugins）→ 以 marketplace 为整体注册
-        const stat = fs.statSync(mDir)
-        tools.push({ id: `plugin:${marketplace}:${marketplace}`, name: marketplace,
-          type: 'plugin', subtype: null, description: '', sourceType: 'downloaded',
-          sourceUrl: null, installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
-          securityScanResult: 'unscanned' })
-      } else {
-        // 单 plugin（如 claude-plugins-official/superpowers）→ 以 pluginName 注册
-        for (const pluginName of children) {
-          const stat = fs.statSync(path.join(mDir, pluginName))
-          tools.push({ id: `plugin:${marketplace}:${pluginName}`, name: pluginName,
+      try {
+        const mDir = path.join(pluginsDir, marketplace)
+        if (!fs.statSync(mDir).isDirectory()) continue
+        const children = fs.readdirSync(mDir).filter(n => {
+          try { return fs.statSync(path.join(mDir, n)).isDirectory() } catch { return false }
+        })
+        if (children.length > 1) {
+          // 多子 plugin（如 knowledge-work-plugins）→ 以 marketplace 为整体注册
+          const stat = fs.statSync(mDir)
+          tools.push({ id: `plugin:${marketplace}:${marketplace}`, name: marketplace,
             type: 'plugin', subtype: null, description: '', sourceType: 'downloaded',
             sourceUrl: null, installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
             securityScanResult: 'unscanned' })
+        } else {
+          // 单 plugin（如 claude-plugins-official/superpowers）→ 以 pluginName 注册
+          for (const pluginName of children) {
+            try {
+              const stat = fs.statSync(path.join(mDir, pluginName))
+              tools.push({ id: `plugin:${marketplace}:${pluginName}`, name: pluginName,
+                type: 'plugin', subtype: null, description: '', sourceType: 'downloaded',
+                sourceUrl: null, installedAt: stat.birthtimeMs, updatedAt: stat.mtimeMs,
+                securityScanResult: 'unscanned' })
+            } catch {}
+          }
         }
-      }
+      } catch {}
     }
   }
   return tools
@@ -94,6 +101,14 @@ export async function indexJsonlFile(filePath) {
       sessionId: result.sessionId, ...inv
     })))
   }
+}
+
+// 只同步工具（skills/plugins），不重新索引 JSONL，速度快，每次启动都调用
+export function syncToolsOnly() {
+  const claudeDir = getClaudeDir()
+  const tools = findAllTools(claudeDir)
+  for (const tool of tools) upsertTool(tool)
+  syncToolIds(new Set(tools.map(t => t.id)))
 }
 
 export async function runFullIndex(onProgress) {

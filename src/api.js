@@ -12,6 +12,7 @@ import {
 import { getDb } from './db/db.js'
 import { getConfigPath, getAppDir, getClaudeDir } from './config.js'
 import { runFullIndex, getScanPaths } from './indexer.js'
+import { extractNickname, generatePosterText } from './poster.js'
 
 // ── 工具路径校验（导出供测试） ──
 const TYPE_DIR = {
@@ -75,7 +76,7 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
       totalDurationSec:    getTotalDurationSec({ after }),
       avgDailyDurationSec: getAvgDailyDurationSec({ after }),
       peakPeriod:          getPeakPeriod({ after }),
-      silentDays:          getSilentDays({ after }),
+      silentDays:          getSilentDays(),
     })
   })
 
@@ -232,6 +233,134 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
     res.json({ ok: true })
   })
 
+  // --- P1：海报称呼提取 ---
+  router.get('/api/poster/nickname', (req, res) => {
+    res.json({ nickname: extractNickname() })
+  })
+
+  // --- P2：海报文案规则生成 ---
+  router.get('/api/poster/generate-text', (req, res) => {
+    const after    = rangeToAfter(req.query.range ?? '7d')
+    const nickname = extractNickname()
+
+    // 收集文案生成所需的基础数据
+    const overview = {
+      sessions:            getSessionCount({ after }),
+      totalDurationSec:    getTotalDurationSec({ after }),
+      avgDailyDurationSec: getAvgDailyDurationSec({ after }),
+      peakPeriod:          getPeakPeriod({ after }),
+      silentDays:          getSilentDays(),
+    }
+
+    // 提取 habit 类型（复用 buildInsights 同款逻辑）
+    const dist = get24hDistribution({ after })
+    let habit = null
+    if (dist.length > 0) {
+      const total       = dist.reduce((s, r) => s + r.count, 0)
+      const nightCount  = dist.filter(r => parseInt(r.hour) >= 20).reduce((s, r) => s + r.count, 0)
+      const morningCount= dist.filter(r => parseInt(r.hour) >= 6 && parseInt(r.hour) < 10).reduce((s, r) => s + r.count, 0)
+      const workCount   = dist.filter(r => parseInt(r.hour) >= 9 && parseInt(r.hour) < 18).reduce((s, r) => s + r.count, 0)
+      if (total > 0) {
+        if      (nightCount   / total > 0.5) habit = 'night'
+        else if (morningCount / total > 0.3) habit = 'morning'
+        else if (workCount    / total > 0.5) habit = 'work'
+      }
+    }
+
+    // 最常用 skill 名称
+    const usageStats = getToolUsageStats({ after })
+    const topSkill   = usageStats[0]?.toolName ?? null
+
+    // 与上期对比趋势
+    const periodMs  = Date.now() - after
+    const prevAfter = after > 0 ? after - periodMs : null
+    let trendChange = null
+    if (prevAfter !== null) {
+      const curr = getSessionCount({ after })
+      const prev = getSessionCount({ after: prevAfter })
+      if (prev > 0) trendChange = Math.round((curr - prev) / prev * 100)
+    }
+
+    const seed = parseInt(req.query.seed ?? '0', 10) || 0
+    res.json(generatePosterText({
+      ...overview,
+      habit,
+      topSkill,
+      trendChange,
+      nickname,
+      seed,
+    }))
+  })
+
+  // --- P3：海报数据聚合（一次请求返回海报所需全部数据）---
+  router.get('/api/poster/data', (req, res) => {
+    const range = req.query.range ?? '7d'
+    const after = rangeToAfter(range)
+
+    // 基础指标
+    const sessions            = getSessionCount({ after })
+    const totalDurationSec    = getTotalDurationSec({ after })
+    const avgDailyDurationSec = getAvgDailyDurationSec({ after })
+    const peakPeriod          = getPeakPeriod({ after })
+    const silentDays          = getSilentDays()
+
+    // 图表数据
+    const heatmap      = getHeatmapData({ after })
+    const distribution = get24hDistribution({ after })
+
+    // habit 类型
+    let habit = null
+    const total        = distribution.reduce((s, r) => s + r.count, 0)
+    const nightCount   = distribution.filter(r => parseInt(r.hour) >= 20).reduce((s, r) => s + r.count, 0)
+    const morningCount = distribution.filter(r => parseInt(r.hour) >= 6 && parseInt(r.hour) < 10).reduce((s, r) => s + r.count, 0)
+    const workCount    = distribution.filter(r => parseInt(r.hour) >= 9 && parseInt(r.hour) < 18).reduce((s, r) => s + r.count, 0)
+    if (total > 0) {
+      if      (nightCount   / total > 0.5) habit = 'night'
+      else if (morningCount / total > 0.3) habit = 'morning'
+      else if (workCount    / total > 0.5) habit = 'work'
+    }
+
+    // top skill 名称
+    const usageStats = getToolUsageStats({ after })
+    const topSkillName = usageStats[0]?.toolName ?? null
+
+    // 使用趋势
+    const periodMs  = Date.now() - after
+    const prevAfter = after > 0 ? after - periodMs : null
+    let trendChange = null
+    if (prevAfter !== null) {
+      const prev = getSessionCount({ after: prevAfter })
+      if (prev > 0) trendChange = Math.round((sessions - prev) / prev * 100)
+    }
+
+    // 称呼 & 生成文案
+    const nickname = extractNickname()
+    const seed = parseInt(req.query.seed ?? '0', 10) || 0
+    const { summary, tags, summaryCount } = generatePosterText({
+      sessions, totalDurationSec, avgDailyDurationSec,
+      peakPeriod, silentDays, habit,
+      topSkill: topSkillName, trendChange, nickname, seed,
+    })
+
+    res.json({
+      range,
+      nickname,
+      summary,
+      summaryCount,
+      tags,
+      metrics: {
+        sessions,
+        totalDurationSec,
+        avgDailyDurationSec,
+        peakPeriod,
+        silentDays,
+        topSkillName,
+      },
+      heatmap,
+      distribution,
+    })
+  })
+
   // --- 批量清理吃灰工具（必须在 /:name 之前注册）---
   router.delete('/api/tools/bulk-dust', async (req, res) => {
     const after = rangeToAfter(req.query.range ?? '7d')
@@ -292,43 +421,54 @@ function buildInsights({ after }) {
   const heatmap = getHeatmapData({ after })
   if (heatmap.length > 0) {
     const best = heatmap.reduce((a, b) => b.count > a.count ? b : a)
-    if (best.count >= 3) {
+    if (best.count >= 2) {
       insights.push({ type: 'best_day', day: best.day, count: best.count })
     }
   }
 
-  // 最长静默期
-  const silentDays = getSilentDays({ after })
+  // 当前静默期
+  const silentDays = getSilentDays()
   if (silentDays >= 2) {
     insights.push({ type: 'silent_days', days: silentDays })
   }
 
-  // 时间习惯（夜猫子/早鸟/上班族）
+  // 时间习惯：总是取占比最高的时段（无门槛保底）
   const dist = get24hDistribution({ after })
   if (dist.length > 0) {
     const total = dist.reduce((s, r) => s + r.count, 0)
-    const nightCount   = dist.filter(r => parseInt(r.hour) >= 20).reduce((s, r) => s + r.count, 0)
-    const morningCount = dist.filter(r => parseInt(r.hour) >= 6 && parseInt(r.hour) < 10).reduce((s, r) => s + r.count, 0)
-    const workCount    = dist.filter(r => parseInt(r.hour) >= 9 && parseInt(r.hour) < 18).reduce((s, r) => s + r.count, 0)
     if (total > 0) {
-      if (nightCount / total > 0.5)
+      const nightCount   = dist.filter(r => parseInt(r.hour) >= 20).reduce((s, r) => s + r.count, 0)
+      const morningCount = dist.filter(r => parseInt(r.hour) >= 6 && parseInt(r.hour) < 10).reduce((s, r) => s + r.count, 0)
+      const workCount    = dist.filter(r => parseInt(r.hour) >= 9 && parseInt(r.hour) < 18).reduce((s, r) => s + r.count, 0)
+      if (nightCount >= morningCount && nightCount >= workCount) {
         insights.push({ type: 'habit', label: '夜猫子', pct: Math.round(nightCount / total * 100) })
-      else if (morningCount / total > 0.3)
+      } else if (morningCount >= workCount) {
         insights.push({ type: 'habit', label: '早鸟', pct: Math.round(morningCount / total * 100) })
-      else if (workCount / total > 0.5)
+      } else {
         insights.push({ type: 'habit', label: '上班族', pct: Math.round(workCount / total * 100) })
+      }
     }
   }
 
-  // 使用趋势（本期 vs 上期）
-  const periodMs = Date.now() - after
-  const prevAfter = after - periodMs
-  const currCount = getSessionCount({ after })
-  const prevCount = getSessionCount({ after: prevAfter })
-  if (prevCount > 0) {
-    const change = Math.round((currCount - prevCount) / prevCount * 100)
-    if (Math.abs(change) >= 10) {
-      insights.push({ type: 'trend', change })
+  // 使用趋势（本期 vs 上期），all 范围无法比较，跳过
+  if (after > 0) {
+    const periodMs = Date.now() - after
+    const prevAfter = after - periodMs
+    const currCount = getSessionCount({ after })
+    const prevCount = getSessionCount({ after: prevAfter })
+    if (prevCount > 0) {
+      const change = Math.round((currCount - prevCount) / prevCount * 100)
+      if (Math.abs(change) >= 10) {
+        insights.push({ type: 'trend', change })
+      }
+    }
+  }
+
+  // 兜底：不足 3 条时补充日均时长
+  if (insights.length < 3) {
+    const avgSec = getAvgDailyDurationSec({ after })
+    if (avgSec > 0) {
+      insights.push({ type: 'avg_daily', avgSec })
     }
   }
 
