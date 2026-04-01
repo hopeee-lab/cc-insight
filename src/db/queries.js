@@ -186,6 +186,13 @@ export function getIndexedFiles() {
   )
 }
 
+export function getFilesNeedingTopics() {
+  return new Set(
+    getDb().prepare('SELECT jsonl_file FROM sessions WHERE topic IS NULL AND jsonl_file IS NOT NULL').all()
+      .map(r => r.jsonl_file)
+  )
+}
+
 export function getTopicsOverview({ after }) {
   return getDb().prepare(`
     SELECT topic,

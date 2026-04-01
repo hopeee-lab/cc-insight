@@ -5,7 +5,7 @@ import { getClaudeDir, getExtraSessionDirs } from './config.js'
 import { parseJsonlFile } from './parsers/jsonl.js'
 import { parseSkillMd } from './parsers/skill-md.js'
 import { scanSkillSecurity } from './parsers/security.js'
-import { upsertSession, upsertTool, insertInvocations, getIndexedFiles, syncToolIds } from './db/queries.js'
+import { upsertSession, upsertTool, insertInvocations, getIndexedFiles, getFilesNeedingTopics, syncToolIds } from './db/queries.js'
 import { classifyTopic, extractKeywords } from './classifiers/topic-rules.js'
 import { getMeta, setMeta } from './db/db.js'
 
@@ -97,7 +97,9 @@ export async function indexJsonlFile(filePath) {
   const result = parseJsonlFile(filePath)
   if (!result) return
 
-  const topic = classifyTopic(result.firstUserMessage)
+  // 优先用第一条用户消息分类，匹配不到时用全量文本兜底
+  let topic = classifyTopic(result.firstUserMessage)
+  if (topic === '其他') topic = classifyTopic(result.allUserText)
   const topicKeywords = extractKeywords(result.allUserText)
 
   upsertSession({
@@ -134,8 +136,10 @@ export async function runFullIndex(onProgress) {
   syncToolIds(new Set(tools.map(t => t.id)))
 
   // Index JSONL files with progress
+  // 同时处理：新文件 + 已索引但 topic 为 NULL 的文件（补分类）
   const indexed = getIndexedFiles()
-  const toIndex = files.filter(f => !indexed.has(f))
+  const needsTopics = getFilesNeedingTopics()
+  const toIndex = files.filter(f => !indexed.has(f) || needsTopics.has(f))
   const total = toIndex.length
 
   for (let i = 0; i < toIndex.length; i++) {

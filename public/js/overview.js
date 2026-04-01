@@ -52,12 +52,15 @@ function statsCards(data) {
 }
 
 export async function renderOverview(container, range) {
-  const [overview, heatmap, dist, insights, toolDist] = await Promise.all([
+  const savedScroll = container.querySelector('.split-right')?.scrollTop ?? 0
+
+  const [overview, heatmap, dist, insights, toolDist, topics] = await Promise.all([
     fetch(`/api/overview?range=${range}`).then(r => r.json()),
     fetch(`/api/heatmap?range=${range}`).then(r => r.json()),
     fetch(`/api/distribution?range=${range}`).then(r => r.json()),
     fetch(`/api/insights?range=${range}`).then(r => r.json()),
     fetch(`/api/tool-distribution?range=${range}`).then(r => r.json()),
+    fetch(`/api/topics?range=${range}`).then(r => r.json()),
   ])
 
   container.innerHTML = `
@@ -81,11 +84,19 @@ export async function renderOverview(container, range) {
           </div>
           <div id="dist-canvas"></div>
         </div>
-        <div class="card">
-          <div class="section-header">
-            <span class="section-title">工具调用分布</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div class="card" style="display:flex;flex-direction:column;">
+            <div class="section-header" style="margin-bottom:8px;">
+              <span class="section-title">工具调用分布</span>
+            </div>
+            <div id="tool-dist-canvas" style="flex:1;display:flex;align-items:center;"></div>
           </div>
-          <div id="tool-dist-canvas"></div>
+          <div class="card">
+            <div class="section-header" style="margin-bottom:8px;">
+              <span class="section-title">Topic Distribution</span>
+            </div>
+            <div id="topic-dist-canvas"></div>
+          </div>
         </div>
       </div>
     </div>`
@@ -98,6 +109,12 @@ export async function renderOverview(container, range) {
   renderHeatmap(document.getElementById('heatmap-canvas'), heatmap)
   renderDist(document.getElementById('dist-canvas'), dist)
   renderToolDist(document.getElementById('tool-dist-canvas'), toolDist)
+  renderTopicDist(document.getElementById('topic-dist-canvas'), topics?.categories ?? [])
+
+  if (savedScroll > 0) {
+    const splitRight = container.querySelector('.split-right')
+    if (splitRight) splitRight.scrollTop = savedScroll
+  }
 }
 
 // ── Heatmap ──
@@ -155,15 +172,13 @@ function renderHeatmap(el, data) {
     const canPrev = data.some(r => r.day < viewStart)
     const canNext = pageOffset > 0
 
-    const pageBtnStyle = (enabled) =>
-      `background:transparent;border:none;cursor:${enabled ? 'pointer' : 'default'};
-       color:var(--muted);font-size:14px;padding:0 4px;font-family:var(--font);
-       opacity:${enabled ? 1 : 0.3};`
+    const btnStyle = `background:transparent;border:none;cursor:pointer;
+       color:var(--muted);font-size:14px;padding:0 4px;font-family:var(--font);`
 
     const paginationHtml = (canPrev || canNext) ? `
       <div style="display:flex;align-items:center;gap:2px;">
-        <button class="heatmap-prev" style="${pageBtnStyle(canPrev)}">&lt;</button>
-        <button class="heatmap-next" style="${pageBtnStyle(canNext)}">&gt;</button>
+        ${canPrev ? `<button class="heatmap-prev" style="${btnStyle}">&lt;</button>` : ''}
+        ${canNext ? `<button class="heatmap-next" style="${btnStyle}">&gt;</button>` : ''}
       </div>` : ''
 
     return { html: `
@@ -289,6 +304,20 @@ const INSIGHT_CONFIG = {
       ? `比上个同期增长 <span class="cyan">+${d.change}%</span>`
       : `比上个同期下降 <span class="red">${d.change}%</span>`
   }),
+  topic_dominant: (d) => ({
+    icon: '🧠',
+    color: 'var(--purple)',
+    title: '话题占比',
+    body: d.ratio
+      ? `<span class="purple">${d.topic}</span> 占 ${d.pct}%，是第二名的 ${d.ratio}×`
+      : `<span class="purple">${d.topic}</span> 占 ${d.pct}%`
+  }),
+  topic_keyword: (d) => ({
+    icon: '🔑',
+    color: 'var(--cyan)',
+    title: '高频词',
+    body: `<span class="cyan">${d.word}</span> 在 ${d.count} 个 session 中出现`
+  }),
 }
 
 function renderInsights(el, insights) {
@@ -391,8 +420,8 @@ function renderToolDist(el, data) {
   }
 
   el.innerHTML = `
-    <div style="display:flex;gap:20px;align-items:center;justify-content:center;">
-      <div style="flex-shrink:0;">
+    <div style="display:flex;gap:20px;align-items:center;justify-content:center;width:100%;">
+      <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;">
         <svg width="120" height="120" viewBox="0 0 140 140">
           ${paths}
           <text x="${cx}" y="${cy - 6}" text-anchor="middle"
@@ -402,5 +431,63 @@ function renderToolDist(el, data) {
         </svg>
       </div>
       ${legendHtml}
+    </div>`
+}
+
+// ── 话题颜色映射 ──
+const TOPIC_COLORS = {
+  '调试修复':   'var(--green)',
+  '新功能开发': 'var(--cyan)',
+  '架构设计':   'var(--amber)',
+  '代码重构':   'var(--purple)',
+  '学习探索':   'var(--red)',
+  '配置运维':   '#06b6d4',
+  '数据分析':   '#f97316',
+  '其他':       'var(--muted)',
+}
+
+// ── Topic Distribution 横向条形图 ──
+function renderTopicDist(el, categories) {
+  if (!el) return
+  if (!categories || categories.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
+    return
+  }
+  el.innerHTML = categories.map(r => {
+    const color = TOPIC_COLORS[r.topic] ?? 'var(--muted)'
+    return `
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+          <span style="color:var(--text);">${r.topic}</span>
+          <span style="color:${color};">${r.pct}%</span>
+        </div>
+        <div style="background:var(--bg3);border-radius:3px;height:6px;">
+          <div style="width:${r.pct}%;background:${color};height:6px;border-radius:3px;
+                      transition:width 0.3s;"></div>
+        </div>
+      </div>`
+  }).join('')
+}
+
+// ── Top Keywords 词云 ──
+function renderKeywords(el, keywords) {
+  if (!el) return
+  if (!keywords || keywords.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
+    return
+  }
+  const maxCount = keywords[0]?.count ?? 1
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;line-height:2.2;">
+      ${keywords.map(k => {
+        const color = TOPIC_COLORS[k.topic] ?? 'var(--muted)'
+        const ratio = k.count / maxCount
+        const size = (0.72 + ratio * 0.38).toFixed(2)
+        return `<span style="color:${color};font-size:${size}em;">${k.word}</span>`
+      }).join('')}
+    </div>
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);
+                font-size:11px;color:var(--muted);">
+      字号 = 词频 · 颜色 = 所属大类
     </div>`
 }

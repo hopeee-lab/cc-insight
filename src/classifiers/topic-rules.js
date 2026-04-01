@@ -60,7 +60,9 @@ const STOP_WORDS = new Set([
  */
 export function classifyTopic(text) {
   if (!text || typeof text !== 'string') return '其他'
-  const lower = text.toLowerCase()
+  // 剥离 XML 标签（如 <local-command-caveat>...</local-command-caveat>）
+  const cleaned = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const lower = cleaned.toLowerCase()
   for (const { topic, keywords } of TOPIC_RULES) {
     if (keywords.some(kw => lower.includes(kw.toLowerCase()))) {
       return topic

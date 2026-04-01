@@ -1,6 +1,5 @@
 // public/js/skills.js
 import { setRange } from './app.js'
-import { renderMcp } from './mcp.js'
 
 function rangeFilter(current) {
   const ranges = [
@@ -77,7 +76,7 @@ export async function renderSkills(container, range) {
       </div>
       <div class="split-right" id="tools-list-panel"></div>
     </div>
-    <div id="mcp-section" style="margin-top:16px;"></div>`
+`
 
   container.querySelectorAll('.range-btn').forEach(btn => {
     btn.addEventListener('click', () => setRange(btn.dataset.range))
@@ -88,8 +87,6 @@ export async function renderSkills(container, range) {
   renderToolsList(document.getElementById('tools-list-panel'), tools, range,
     () => renderSkills(container, range))
   renderRecommendations(document.getElementById('recommendations-panel'), tools, container, range)
-
-  renderMcp(document.getElementById('mcp-section'))
 
   // 恢复滚动位置
   if (savedScroll > 0) {
@@ -567,23 +564,23 @@ function renderToolsList(el, tools, range, onDeleted) {
     return tools.filter(t => t.type === currentFilter)
   }
 
-  function render() {
+  function render(resetScroll = false) {
+    const savedScroll = resetScroll ? 0 : (el.scrollTop ?? 0)
     el.innerHTML = buildToolsListHtml(tools, filtered(), currentFilter, currentPage, range)
+    if (savedScroll > 0) el.scrollTop = savedScroll
     // tab 点击
     el.querySelectorAll('.filter-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         currentFilter = btn.dataset.filter
         currentPage = 0
-        render()
+        render(false)
       })
     })
     // 翻页
     el.querySelectorAll('.page-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         currentPage += parseInt(btn.dataset.dir)
-        render()
-        const splitRight = el.closest('.split-right')
-        if (splitRight) splitRight.scrollTop = 0
+        render(true)
       })
     })
     bindDeleteButtons(el, onDeleted)

@@ -58,13 +58,15 @@ tests/
   config.test.js         config 测试
 ```
 
-## 已实现功能（一期）
+## 已实现功能
 
-### 使用概览
+### 使用概览（一期 + 二期）
 - 4 个指标卡片：SESSIONS / DURATION / PEAK HOUR / SILENT DAYS
 - INSIGHTS 洞察：时间习惯、趋势对比、最高产的一天、avg_daily 等（动态生成，有数据才展示）
-- ACTIVITY HEATMAP：GitHub contribution graph 风格，支持分页
+- ACTIVITY HEATMAP：GitHub contribution graph 风格，仅在数据超出当前页范围时显示翻页箭头
 - 24H 时间分布图：柱状图，标注 Top 3 活跃时段
+- 工具调用分布：环形图 + 图例（Bash/Read/Edit 等内置工具占比）
+- Topic Distribution：水平条形图（7 个话题大类）；索引时规则分类，XML 消息自动剥离，allUserText 兜底
 - 全局时间筛选：7d / 30d / 90d / 全部
 
 ### Skill & Agent & Plugin 管理
@@ -75,10 +77,10 @@ tests/
 - 吃灰检测：30 天未用自动标记
 - 安全扫描：检测 SKILL.md 中高风险指令
 - AI 推荐：建议清理（批量删除）
-- 列表筛选：全部 / Skill / Agent / Plugin / 吃灰
+- 列表筛选：全部 / Skill / Agent / Plugin / 吃灰（切换时保持滚动位置）
 - 每次启动自动重新扫描 skill 目录（syncToolsOnly）
 
-### MCP Server
+### MCP Server（独立页签）
 - 读取 `~/.claude/settings.json` 和 `~/Library/Application Support/Claude/claude_desktop_config.json`
 - 展示已配置 MCP Server 列表
 
@@ -90,24 +92,16 @@ tests/
 
 ## 迭代 Backlog
 
-### 当前进行中
-
-| 功能 | 状态 | 说明 |
-|------|------|------|
-| **Session 话题分类与洞察** | 🏗️ 进行中 | 方案 A（索引时分类），Topics 独立页签，MCP 合并进 Skills |
-
 ### 二期（已规划）
 
 | 功能 | 说明 |
 |------|------|
-| 工具调用分布 | Bash / Read / Write 等占比饼图 |
 | 数据清理命令 | `cc-insight clean --before YYYY-MM`，自动归档 90 天前数据 |
 | 浅色主题 | 顶栏主题切换，状态持久化到 `~/.cc-insight/config.json` |
 | npm 发布 | `npm install -g cc-insight` 支持 |
-| **Topics 趋势对比** | 本周 vs 上周话题分布对比，Topics 页差异化核心亮点（当前期推迟） |
-| **Topics API Key 增强** | 用户可选输入 Claude/OpenAI API Key，覆盖规则匹配结果提升分类准确度 |
-| **Topics 两层分类** | 任务类型大类下钻技术领域词云（当前期只做单层） |
-| **MCP 独立页签恢复** | 如 MCP 数据量增大，可从 Skills 页拆回独立页签 |
+| **Topics 趋势对比** | 本周 vs 上周话题分布对比，差异化核心亮点 |
+| **Topics API Key 增强** | 用户可选输入 Claude/OpenAI API Key，覆盖规则匹配提升分类准确度 |
+| **Topics 两层分类** | 任务类型大类下钻技术领域词云（当前只做单层） |
 
 ### 三期（远期）
 
@@ -138,29 +132,3 @@ tests/
 
 ---
 
-## 未提交改动快照（2026-03-31）
-
-### 修改未提交（11个文件）
-| 文件 | 说明 |
-|------|------|
-| `bin/cc-insight.js` | 新增 `syncToolsOnly()` 调用 |
-| `public/index.html` | 海报 UI、split padding 修复 |
-| `public/js/app.js` | 海报路由、WS refresh 处理 |
-| `public/js/overview.js` | insights 新增 avg_daily、静默文案调整 |
-| `public/js/skills.js` | sourceTag 移除、滚动位置保存 |
-| `src/api.js` | `buildInsights()` 修复、海报 API |
-| `src/db/queries.js` | `getSilentDays()` 移除 after 参数 |
-| `src/indexer.js` | `syncToolsOnly()`、try/catch 保护 |
-| `tests/skills/toolsList.test.js` | sourceTag 断言移除 |
-| `tests/skills/topTools.test.js` | fixtures 加 allTimeUseCount |
-
-### 新增未跟踪（7个）
-| 文件 | 说明 |
-|------|------|
-| `CLAUDE.md` | 项目级开发指令 |
-| `README.md` | 英文 README |
-| `README.zh.md` | 中文 README |
-| `docs/superpowers/plans/2026-03-31-readme-documentation.md` | README 编写计划 |
-| `public/js/poster.js` | 海报前端逻辑 |
-| `src/poster.js` | 海报数据组装 |
-| `pic/` | 截图目录 |
