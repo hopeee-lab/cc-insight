@@ -1,5 +1,6 @@
 // public/js/skills.js
 import { setRange } from './app.js'
+import { renderMcp } from './mcp.js'
 
 function rangeFilter(current) {
   const ranges = [
@@ -75,7 +76,8 @@ export async function renderSkills(container, range) {
         <div id="recommendations-panel"></div>
       </div>
       <div class="split-right" id="tools-list-panel"></div>
-    </div>`
+    </div>
+    <div id="mcp-section" style="margin-top:16px;"></div>`
 
   container.querySelectorAll('.range-btn').forEach(btn => {
     btn.addEventListener('click', () => setRange(btn.dataset.range))
@@ -86,6 +88,8 @@ export async function renderSkills(container, range) {
   renderToolsList(document.getElementById('tools-list-panel'), tools, range,
     () => renderSkills(container, range))
   renderRecommendations(document.getElementById('recommendations-panel'), tools, container, range)
+
+  renderMcp(document.getElementById('mcp-section'))
 
   // 恢复滚动位置
   if (savedScroll > 0) {
