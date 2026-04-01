@@ -185,3 +185,39 @@ export function getIndexedFiles() {
       .map(r => r.jsonl_file)
   )
 }
+
+export function getTopicsOverview({ after }) {
+  return getDb().prepare(`
+    SELECT topic,
+           COUNT(*) as count,
+           ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) as pct
+    FROM sessions
+    WHERE start_time >= ? AND topic IS NOT NULL
+    GROUP BY topic
+    ORDER BY count DESC
+  `).all(after)
+}
+
+export function getTopicKeywords({ after }) {
+  const rows = getDb().prepare(`
+    SELECT topic, topic_keywords
+    FROM sessions
+    WHERE start_time >= ? AND topic_keywords IS NOT NULL
+  `).all(after)
+
+  const freq = {}
+  const topicMap = {}
+  for (const r of rows) {
+    let words
+    try { words = JSON.parse(r.topic_keywords) } catch { continue }
+    for (const w of words) {
+      freq[w] = (freq[w] ?? 0) + 1
+      if (!topicMap[w]) topicMap[w] = r.topic
+    }
+  }
+
+  return Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([word, count]) => ({ word, count, topic: topicMap[word] ?? '其他' }))
+}

@@ -7,7 +7,8 @@ import {
   getSessionCount, getTotalDurationSec, getAvgDailyDurationSec,
   getPeakPeriod, getSilentDays, getHeatmapData, get24hDistribution,
   getInvocationsByTool, getAllTools, getToolUsageStats, deleteTool, getDustToolNames,
-  getToolDistribution, getPluginSubskillStats
+  getToolDistribution, getPluginSubskillStats,
+  getTopicsOverview, getTopicKeywords,
 } from './db/queries.js'
 import { getDb } from './db/db.js'
 import { getConfigPath, getAppDir, getClaudeDir } from './config.js'
@@ -98,6 +99,14 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
   router.get('/api/insights', (req, res) => {
     const after = rangeToAfter(req.query.range ?? '7d')
     res.json(buildInsights({ after }))
+  })
+
+  router.get('/api/topics', (req, res) => {
+    const after = rangeToAfter(req.query.range ?? '7d')
+    res.json({
+      categories: getTopicsOverview({ after }),
+      keywords:   getTopicKeywords({ after }),
+    })
   })
 
   // --- 主题 2：Skill & Agent & Plugin ---
@@ -462,6 +471,26 @@ function buildInsights({ after }) {
         insights.push({ type: 'trend', change })
       }
     }
+  }
+
+  // 话题洞察：top 话题占比 + 最高频关键词
+  const topicRows = getTopicsOverview({ after })
+  if (topicRows.length > 0) {
+    const top = topicRows[0]
+    const second = topicRows[1]
+    if (second) {
+      const ratio = Math.round(top.pct / second.pct * 10) / 10
+      if (ratio >= 1.5) {
+        insights.push({ type: 'topic_dominant', topic: top.topic, pct: top.pct, ratio })
+      }
+    } else {
+      insights.push({ type: 'topic_dominant', topic: top.topic, pct: top.pct, ratio: null })
+    }
+  }
+
+  const kwRows = getTopicKeywords({ after })
+  if (kwRows.length > 0) {
+    insights.push({ type: 'topic_keyword', word: kwRows[0].word, count: kwRows[0].count })
   }
 
   // 兜底：不足 3 条时补充日均时长
