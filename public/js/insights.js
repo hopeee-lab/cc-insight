@@ -16,6 +16,10 @@ function topicColor(topic) {
   return TOPIC_COLORS[topic] ?? 'var(--muted)'
 }
 
+const CARD_HEIGHT = 300  // px，所有图表卡片统一高度
+const PAGE_SIZE   = 5    // 条形图每页条目数
+const PAGE_SIZE_OUTLIERS = 4
+
 function rangeFilter(current) {
   const ranges = [
     { value: '7d',  label: '7 天' },
@@ -35,7 +39,11 @@ function rangeFilter(current) {
 
 function projectName(p) {
   if (!p || p === '未知') return '未知'
-  return p.split('/').filter(Boolean).pop() ?? p
+  const parts = p.split('/')
+  const home = '/Users/' + (parts[2] ?? '')
+  if (p === home) return '主目录项目'
+  if (p.startsWith(home + '/')) return '~' + p.slice(home.length)
+  return parts.filter(Boolean).pop() ?? p
 }
 
 function summaryCards(data) {
@@ -77,38 +85,87 @@ function summaryCards(data) {
     </div>`
 }
 
+// ── 通用翻页渲染器 ──
+function renderPaged(el, rows, pageSize, renderItem, emptyMsg = '暂无数据') {
+  if (!rows || rows.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">${emptyMsg}</div>`
+    return
+  }
+
+  let page = 0
+  const totalPages = Math.ceil(rows.length / pageSize)
+
+  const btnStyle = `background:transparent;border:none;cursor:pointer;
+    color:var(--muted);font-size:14px;padding:0 6px;font-family:var(--font);`
+
+  function render() {
+    const slice = rows.slice(page * pageSize, (page + 1) * pageSize)
+    const pagination = totalPages > 1 ? `
+      <div style="display:flex;align-items:center;justify-content:flex-end;
+        gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">
+        ${page > 0
+          ? `<button class="pg-prev" style="${btnStyle}">&#8249;</button>`
+          : `<span style="color:var(--bg3);font-size:14px;padding:0 6px;">&#8249;</span>`}
+        <span style="font-size:11px;color:var(--muted);">${page + 1} / ${totalPages}</span>
+        ${page < totalPages - 1
+          ? `<button class="pg-next" style="${btnStyle}">&#8250;</button>`
+          : `<span style="color:var(--bg3);font-size:14px;padding:0 6px;">&#8250;</span>`}
+      </div>` : ''
+
+    el.innerHTML = `
+      <div style="flex:1;min-height:0;">
+        ${slice.map(renderItem).join('')}
+      </div>
+      ${pagination}`
+
+    el.querySelector('.pg-prev')?.addEventListener('click', () => { page--; render() })
+    el.querySelector('.pg-next')?.addEventListener('click', () => { page++; render() })
+  }
+
+  render()
+}
+
 export async function renderInsightsPage(container, range) {
-  const savedScroll = container.scrollTop
+  const scroller = container.querySelector('.insights-scroll')
+  const savedScroll = scroller?.scrollTop ?? 0
 
   const data = await fetch(`/api/efficiency?range=${range}`).then(r => r.json())
 
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
+
+  const cardStyle = `height:${CARD_HEIGHT}px;display:flex;flex-direction:column;`
+  const contentStyle = `flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;`
+
   container.innerHTML = `
     ${rangeFilter(range)}
-    ${summaryCards(data)}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="card">
-        <div class="section-header"><span class="section-title">Prompt 效率 — 平均对话轮数</span></div>
-        <div id="ins-rounds"></div>
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">自动化程度 — 工具调用密度</span></div>
-        <div id="ins-density"></div>
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">时间投入 — 话题时长占比</span></div>
-        <div id="ins-duration"></div>
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
-        <div id="ins-heatmap"></div>
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">低效 Session 列表</span></div>
-        <div id="ins-outliers"></div>
-      </div>
-      <div class="card">
-        <div class="section-header"><span class="section-title">项目分布</span></div>
-        <div id="ins-projects"></div>
+    <div class="insights-scroll" style="flex:1;min-height:0;overflow-y:auto;padding-bottom:20px;">
+      ${summaryCards(data)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="card" style="${cardStyle}">
+          <div class="section-header"><span class="section-title">Prompt 效率 — 平均对话轮数</span></div>
+          <div id="ins-rounds" style="${contentStyle}"></div>
+        </div>
+        <div class="card" style="${cardStyle}">
+          <div class="section-header"><span class="section-title">自动化程度 — 工具调用密度</span></div>
+          <div id="ins-density" style="${contentStyle}"></div>
+        </div>
+        <div class="card" style="${cardStyle}">
+          <div class="section-header"><span class="section-title">时间投入 — 话题时长占比</span></div>
+          <div id="ins-duration" style="${contentStyle}"></div>
+        </div>
+        <div class="card" style="${cardStyle}">
+          <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
+          <div id="ins-heatmap" style="${contentStyle}"></div>
+        </div>
+        <div class="card" style="${cardStyle}">
+          <div class="section-header"><span class="section-title">低效 Session 列表</span></div>
+          <div id="ins-outliers" style="${contentStyle}"></div>
+        </div>
+        <div class="card" style="${cardStyle}">
+          <div class="section-header"><span class="section-title">项目分布</span></div>
+          <div id="ins-projects" style="${contentStyle}"></div>
+        </div>
       </div>
     </div>`
 
@@ -123,70 +180,53 @@ export async function renderInsightsPage(container, range) {
   renderOutliers(document.getElementById('ins-outliers'), data.outlierSessions)
   renderProjects(document.getElementById('ins-projects'), data.projectDist)
 
-  if (savedScroll > 0) container.scrollTop = savedScroll
+  if (savedScroll > 0) {
+    const s = container.querySelector('.insights-scroll')
+    if (s) s.scrollTop = savedScroll
+  }
 }
 
-// ── 通用横向条形图 ──
-function hBar(el, rows, valueKey, labelFn) {
-  if (!rows || rows.length === 0) {
-    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
-    return
-  }
-  const max = Math.max(...rows.map(r => r[valueKey]), 1)
-  el.innerHTML = rows.map(r => {
-    const color = topicColor(r.topic)
-    const pct   = r[valueKey] / max * 100
-    return `
-      <div style="margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
-          <span style="color:var(--text);">${r.topic}</span>
-          <span style="color:${color};">${labelFn(r)}</span>
-        </div>
-        <div style="background:var(--bg3);border-radius:3px;height:6px;">
-          <div style="width:${pct}%;background:${color};height:6px;border-radius:3px;
-                      transition:width 0.3s;min-width:4px;"></div>
-        </div>
-      </div>`
-  }).join('')
+// ── 条形图 item 渲染器 ──
+function barItem(topic, label, pct) {
+  const color = topicColor(topic)
+  return `
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+        <span style="color:var(--text);">${topic}</span>
+        <span style="color:${color};">${label}</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:3px;height:6px;">
+        <div style="width:${pct}%;background:${color};height:6px;border-radius:3px;
+                    transition:width 0.3s;min-width:4px;"></div>
+      </div>
+    </div>`
 }
 
 function renderRounds(el, rows) {
-  hBar(el, rows, 'avgRounds', r => `${r.avgRounds} 轮`)
+  const max = Math.max(...(rows ?? []).map(r => r.avgRounds), 1)
+  renderPaged(el, rows, PAGE_SIZE,
+    r => barItem(r.topic, `${r.avgRounds} 轮`, r.avgRounds / max * 100))
 }
 
 function renderDensity(el, rows) {
-  hBar(el, rows, 'density', r => `${r.density} 次/轮`)
+  const max = Math.max(...(rows ?? []).map(r => r.density), 1)
+  renderPaged(el, rows, PAGE_SIZE,
+    r => barItem(r.topic, `${r.density} 次/轮`, r.density / max * 100))
 }
 
 function renderDuration(el, rows) {
-  if (!rows || rows.length === 0) {
-    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
-    return
-  }
-  el.innerHTML = rows.map(r => {
-    const color = topicColor(r.topic)
-    return `
-      <div style="margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
-          <span style="color:var(--text);">${r.topic}</span>
-          <span style="color:${color};">${r.pct}%</span>
-        </div>
-        <div style="background:var(--bg3);border-radius:3px;height:6px;">
-          <div style="width:${r.pct}%;background:${color};height:6px;border-radius:3px;
-                      transition:width 0.3s;min-width:4px;"></div>
-        </div>
-      </div>`
-  }).join('')
+  renderPaged(el, rows, PAGE_SIZE,
+    r => barItem(r.topic, `${r.pct}%`, r.pct))
 }
 
-// ── 时间规律热力图（时段 × 话题）──
+// ── 时间规律热力图（flex 自适应宽度）──
 function renderHeatmap(el, rows) {
   if (!rows || rows.length === 0) {
     el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
     return
   }
 
-  const topics = [...new Set(rows.map(r => r.topic))].slice(0, 6)
+  const topics = [...new Set(rows.map(r => r.topic))].slice(0, 8)
   const hours  = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
 
   const lookup = {}
@@ -198,95 +238,89 @@ function renderHeatmap(el, rows) {
 
   function cellColor(count) {
     if (!count) return 'var(--bg3)'
-    const pct = count / maxCount
-    if (pct < 0.25) return '#0e4429'
-    if (pct < 0.5)  return '#006d32'
-    if (pct < 0.75) return '#26a641'
+    const p = count / maxCount
+    if (p < 0.25) return '#0e4429'
+    if (p < 0.5)  return '#006d32'
+    if (p < 0.75) return '#26a641'
     return '#39d353'
   }
 
-  const CELL = 10
+  const LABEL_W = '24px'
+  const GAP = '3px'
+
+  const headerCells = topics.map(t =>
+    `<div style="flex:1;font-size:9px;color:${topicColor(t)};
+      text-align:center;overflow:hidden;white-space:nowrap;">${t.slice(0, 2)}</div>`
+  ).join('')
 
   const hourRows = hours.filter((_, i) => i % 2 === 0).map(h => {
     const cells = topics.map(t => {
       const cnt = lookup[h]?.[t] ?? 0
-      return `<div title="${h}:00 · ${t} · ${cnt} sessions"
-        style="width:${CELL}px;height:${CELL}px;border-radius:2px;
-          background:${cellColor(cnt)};flex-shrink:0;"></div>`
+      return `<div title="${h}:00 · ${t} · ${cnt}"
+        style="flex:1;height:10px;border-radius:2px;background:${cellColor(cnt)};"></div>`
     }).join('')
     return `
-      <div style="display:flex;align-items:center;gap:2px;margin-bottom:2px;">
-        <span style="font-size:9px;color:var(--muted);width:20px;text-align:right;
-          margin-right:4px;">${h}</span>
-        <div style="display:flex;gap:4px;">${cells}</div>
+      <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:2px;">
+        <span style="font-size:9px;color:var(--muted);width:${LABEL_W};
+          text-align:right;flex-shrink:0;">${h}</span>
+        <div style="display:flex;flex:1;gap:${GAP};">${cells}</div>
       </div>`
   }).join('')
 
   el.innerHTML = `
-    <div style="display:flex;gap:4px;margin-bottom:4px;padding-left:26px;">
-      ${topics.map(t =>
-        `<div style="font-size:9px;color:${topicColor(t)};width:${CELL}px;
-          text-align:center;overflow:hidden;">${t.slice(0, 2)}</div>`
-      ).join('')}
-    </div>
-    ${hourRows}
-    <div style="display:flex;gap:4px;align-items:center;margin-top:6px;">
-      <span style="font-size:10px;color:var(--muted);">少</span>
-      ${['var(--bg3)', '#0e4429', '#006d32', '#26a641', '#39d353'].map(c =>
-        `<div style="width:8px;height:8px;background:${c};border-radius:2px;"></div>`).join('')}
-      <span style="font-size:10px;color:var(--muted);">多</span>
+    <div style="display:flex;flex-direction:column;height:100%;">
+      <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:4px;">
+        <span style="width:${LABEL_W};flex-shrink:0;"></span>
+        <div style="display:flex;flex:1;gap:${GAP};">${headerCells}</div>
+      </div>
+      <div style="flex:1;overflow:hidden;">${hourRows}</div>
+      <div style="display:flex;gap:4px;align-items:center;margin-top:6px;flex-shrink:0;">
+        <span style="font-size:10px;color:var(--muted);">少</span>
+        ${['var(--bg3)', '#0e4429', '#006d32', '#26a641', '#39d353'].map(c =>
+          `<div style="width:8px;height:8px;background:${c};border-radius:2px;"></div>`).join('')}
+        <span style="font-size:10px;color:var(--muted);">多</span>
+      </div>
     </div>`
 }
 
 // ── 低效 Session 列表 ──
 function renderOutliers(el, rows) {
-  if (!rows || rows.length === 0) {
-    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">
-      暂无异常 Session（对话轮数均在正常范围内）</div>`
-    return
-  }
-
-  function fileBase(p) {
-    if (!p) return '—'
-    return p.split('/').pop()?.replace('.jsonl', '') ?? p
-  }
-
   function fmtDate(ms) {
     if (!ms) return '—'
     return new Date(ms).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
   }
 
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      ${rows.map(r => `
-        <div style="background:var(--bg3);border-radius:4px;padding:8px 10px;
-          border-left:3px solid ${topicColor(r.topic)};">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:12px;color:${topicColor(r.topic)};">${r.topic ?? '未分类'}</span>
-            <span style="font-size:12px;color:var(--red);font-weight:bold;">${r.messageCount} 轮</span>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;
-            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            ${fileBase(r.jsonlFile)} · ${fmtDate(r.startTime)}
-          </div>
-        </div>`).join('')}
-    </div>`
+  function keywords(raw) {
+    if (!raw) return '—'
+    try {
+      const kws = JSON.parse(raw)
+      return kws.slice(0, 4).join(' · ') || '—'
+    } catch { return '—' }
+  }
+
+  renderPaged(el, rows, PAGE_SIZE_OUTLIERS, r => `
+    <div style="background:var(--bg3);border-radius:4px;padding:8px 10px;
+      margin-bottom:6px;border-left:3px solid ${topicColor(r.topic)};">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:${topicColor(r.topic)};">${r.topic ?? '未分类'}</span>
+        <span style="font-size:12px;color:var(--red);font-weight:bold;">${r.messageCount} 轮</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        ${keywords(r.topicKeywords)} · ${fmtDate(r.startTime)}
+      </div>
+    </div>`,
+    '暂无异常 Session（对话轮数均在正常范围内）')
 }
 
 // ── 项目分布 ──
 function renderProjects(el, rows) {
-  if (!rows || rows.length === 0) {
-    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
-    return
-  }
-
   const COLORS = [
     'var(--green)', 'var(--cyan)', 'var(--amber)', 'var(--purple)',
     'var(--red)', '#f97316', '#06b6d4', 'var(--muted)',
   ]
-
-  el.innerHTML = rows.map((r, i) => {
-    const color = COLORS[i] ?? 'var(--muted)'
+  renderPaged(el, rows, PAGE_SIZE, (r, i) => {
+    const color = COLORS[rows.indexOf(r)] ?? 'var(--muted)'
     return `
       <div style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
@@ -299,5 +333,5 @@ function renderProjects(el, rows) {
                       transition:width 0.3s;min-width:4px;"></div>
         </div>
       </div>`
-  }).join('')
+  })
 }

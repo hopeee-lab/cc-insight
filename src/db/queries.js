@@ -260,7 +260,7 @@ export function getOutlierSessions({ after }) {
     )
     SELECT s.topic,
            s.message_count  as messageCount,
-           s.jsonl_file     as jsonlFile,
+           s.topic_keywords as topicKeywords,
            s.start_time     as startTime
     FROM sessions s, avg_mc
     WHERE s.start_time >= ?
