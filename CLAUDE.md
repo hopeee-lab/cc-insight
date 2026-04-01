@@ -103,7 +103,14 @@ tests/
 | **Topics API Key 增强** | 用户可选输入 Claude/OpenAI API Key，覆盖规则匹配提升分类准确度 |
 | **Topics 两层分类** | 任务类型大类下钻技术领域词云（当前只做单层） |
 
-### 三期（远期）
+### 三期（效率分析 — Token 维度，需新增采集）
+
+| 功能 | 说明 |
+|------|------|
+| 各话题平均 token 消耗 | 解析 JSONL assistant.usage 字段，入库 input/output_tokens，按话题聚合 |
+| Cache 命中率趋势 | cache_read_input_tokens / total_input，按话题 + 时间维度展示 |
+
+### 四期（远期）
 
 | 功能 | 说明 |
 |------|------|
