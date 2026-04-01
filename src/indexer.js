@@ -6,6 +6,7 @@ import { parseJsonlFile } from './parsers/jsonl.js'
 import { parseSkillMd } from './parsers/skill-md.js'
 import { scanSkillSecurity } from './parsers/security.js'
 import { upsertSession, upsertTool, insertInvocations, getIndexedFiles, syncToolIds } from './db/queries.js'
+import { classifyTopic, extractKeywords } from './classifiers/topic-rules.js'
 import { getMeta, setMeta } from './db/db.js'
 
 function findAllJsonlFiles(claudeDir) {
@@ -95,7 +96,19 @@ export function getScanPaths() {
 export async function indexJsonlFile(filePath) {
   const result = parseJsonlFile(filePath)
   if (!result) return
-  upsertSession({ ...result, id: result.sessionId, source: 'claude-code', jsonlFile: filePath })
+
+  const topic = classifyTopic(result.firstUserMessage)
+  const topicKeywords = extractKeywords(result.allUserText)
+
+  upsertSession({
+    ...result,
+    id: result.sessionId,
+    source: 'claude-code',
+    jsonlFile: filePath,
+    topic,
+    topicKeywords,
+  })
+
   if (result.invocations.length > 0) {
     insertInvocations(result.invocations.map(inv => ({
       sessionId: result.sessionId, ...inv

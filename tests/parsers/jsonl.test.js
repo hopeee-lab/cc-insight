@@ -40,3 +40,34 @@ test('returns null for empty or invalid file', () => {
   const f = writeTmp(['{invalid json}', ''])
   expect(parseJsonlFile(f)).toBeNull()
 })
+
+test('extracts firstUserMessage from first user message text', () => {
+  const f = writeTmp([
+    JSON.stringify({ type: 'user', sessionId: 's1', timestamp: '2026-01-01T10:00:00.000Z',
+      message: { content: [{ type: 'text', text: 'Fix this bug please' }] } }),
+    JSON.stringify({ type: 'user', sessionId: 's1', timestamp: '2026-01-01T10:01:00.000Z',
+      message: { content: [{ type: 'text', text: 'also refactor it' }] } }),
+  ])
+  const result = parseJsonlFile(f)
+  expect(result.firstUserMessage).toBe('Fix this bug please')
+})
+
+test('extracts allUserText concatenating all user messages', () => {
+  const f = writeTmp([
+    JSON.stringify({ type: 'user', sessionId: 's1', timestamp: '2026-01-01T10:00:00.000Z',
+      message: { content: [{ type: 'text', text: 'Fix this bug' }] } }),
+    JSON.stringify({ type: 'user', sessionId: 's1', timestamp: '2026-01-01T10:01:00.000Z',
+      message: { content: [{ type: 'text', text: 'and add feature' }] } }),
+  ])
+  const result = parseJsonlFile(f)
+  expect(result.allUserText).toContain('Fix this bug')
+  expect(result.allUserText).toContain('and add feature')
+})
+
+test('firstUserMessage falls back to empty string when no text content', () => {
+  const f = writeTmp([
+    JSON.stringify({ type: 'user', sessionId: 's1', timestamp: '2026-01-01T10:00:00.000Z' }),
+  ])
+  const result = parseJsonlFile(f)
+  expect(result.firstUserMessage).toBe('')
+})

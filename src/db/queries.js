@@ -2,12 +2,15 @@
 import { getDb } from './db.js'
 
 export function upsertSession({ id, source, startTime, endTime, durationSec,
-                                 projectPath, messageCount, toolUseCount, jsonlFile }) {
+                                 projectPath, messageCount, toolUseCount, jsonlFile,
+                                 topic = null, topicKeywords = null }) {
   getDb().prepare(`
     INSERT OR REPLACE INTO sessions
-      (id, source, start_time, end_time, duration_sec, project_path, message_count, tool_use_count, jsonl_file)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, source, startTime, endTime, durationSec, projectPath, messageCount, toolUseCount, jsonlFile)
+      (id, source, start_time, end_time, duration_sec, project_path, message_count, tool_use_count, jsonl_file,
+       topic, topic_keywords)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, source, startTime, endTime, durationSec, projectPath, messageCount, toolUseCount, jsonlFile,
+         topic, topicKeywords ? JSON.stringify(topicKeywords) : null)
 }
 
 export function upsertTool({ id, name, type, subtype, description, sourceType, sourceUrl,

@@ -38,6 +38,23 @@ export function parseJsonlFile(filePath) {
     }
   }
 
+  // 提取用户消息文本（排除 tool_result 类型内容）
+  function extractText(msg) {
+    const content = msg.message?.content ?? msg.content ?? ''
+    if (typeof content === 'string') return content
+    if (Array.isArray(content)) {
+      return content
+        .filter(b => b.type === 'text')
+        .map(b => b.text ?? '')
+        .join(' ')
+    }
+    return ''
+  }
+
+  const userTextList = userMsgs.map(r => extractText(r)).filter(Boolean)
+  const firstUserMessage = userTextList[0] ?? ''
+  const allUserText = userTextList.join(' ')
+
   return {
     sessionId,
     startTime,
@@ -47,5 +64,7 @@ export function parseJsonlFile(filePath) {
     messageCount,
     toolUseCount: invocations.length,
     invocations,
+    firstUserMessage,
+    allUserText,
   }
 }

@@ -12,6 +12,14 @@ export function getDb() {
   _db = new Database(getDbPath())
   _db.pragma('journal_mode = WAL')
   _db.exec(CREATE_TABLES)
+  // 迁移：兼容旧 DB，按需新增列
+  const existingCols = _db.prepare('PRAGMA table_info(sessions)').all().map(c => c.name)
+  if (!existingCols.includes('topic')) {
+    _db.exec('ALTER TABLE sessions ADD COLUMN topic TEXT')
+  }
+  if (!existingCols.includes('topic_keywords')) {
+    _db.exec('ALTER TABLE sessions ADD COLUMN topic_keywords TEXT')
+  }
   return _db
 }
 
