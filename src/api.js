@@ -9,6 +9,8 @@ import {
   getInvocationsByTool, getAllTools, getToolUsageStats, deleteTool, getDustToolNames,
   getToolDistribution, getPluginSubskillStats,
   getTopicsOverview, getTopicKeywords,
+  getAvgRoundsByTopic, getDurationByTopic, getToolDensityByTopic,
+  getTimeTopicHeatmap, getOutlierSessions, getProjectDist,
 } from './db/queries.js'
 import { getDb } from './db/db.js'
 import { getConfigPath, getAppDir, getClaudeDir } from './config.js'
@@ -106,6 +108,18 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
     res.json({
       categories: getTopicsOverview({ after }),
       keywords:   getTopicKeywords({ after }),
+    })
+  })
+
+  router.get('/api/efficiency', (req, res) => {
+    const after = rangeToAfter(req.query.range ?? '7d')
+    res.json({
+      roundsByTopic:   getAvgRoundsByTopic({ after }),
+      durationByTopic: getDurationByTopic({ after }),
+      densityByTopic:  getToolDensityByTopic({ after }),
+      heatmap:         getTimeTopicHeatmap({ after }),
+      outlierSessions: getOutlierSessions({ after }),
+      projectDist:     getProjectDist({ after }),
     })
   })
 
