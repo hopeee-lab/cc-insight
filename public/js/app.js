@@ -3,6 +3,7 @@ import { initTheme } from './theme.js'
 import { renderOverview } from './overview.js'
 import { renderSkills } from './skills.js'
 import { renderMcp } from './mcp.js'
+import { renderInsightsPage } from './insights.js'
 import { openPosterModal } from './poster.js'
 
 // 当前时间范围，全局共享
@@ -57,9 +58,10 @@ function renderView(view) {
     btn.classList.toggle('active', btn.dataset.view === view)
   })
 
-  if (view === 'overview') renderOverview(content, currentRange)
-  if (view === 'skills')   renderSkills(content, currentRange)
-  if (view === 'mcp')      renderMcp(content)
+  if (view === 'overview')  renderOverview(content, currentRange)
+  if (view === 'insights')  renderInsightsPage(content, currentRange)
+  if (view === 'skills')    renderSkills(content, currentRange)
+  if (view === 'mcp')       renderMcp(content)
 }
 
 // ── 时间筛选 ──
