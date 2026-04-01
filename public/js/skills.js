@@ -437,22 +437,16 @@ export function buildToolsListHtml(allTools, displayTools, currentFilter, page =
 
 function showConfirm(message) {
   return new Promise(resolve => {
-    const modal = document.getElementById('confirm-modal')
+    const modal   = document.getElementById('confirm-modal')
+    const okBtn   = document.getElementById('confirm-ok')
+    const cancelBtn = document.getElementById('confirm-cancel')
     document.getElementById('confirm-msg').textContent = message
     modal.style.display = 'flex'
 
-    function cleanup(result) {
-      modal.style.display = 'none'
-      okBtn.removeEventListener('click', onOk)
-      cancelBtn.removeEventListener('click', onCancel)
-      resolve(result)
-    }
-    const onOk     = () => cleanup(true)
-    const onCancel = () => cleanup(false)
-    const okBtn     = document.getElementById('confirm-ok')
-    const cancelBtn = document.getElementById('confirm-cancel')
-    okBtn.addEventListener('click', onOk)
-    cancelBtn.addEventListener('click', onCancel)
+    const onOk     = () => { modal.style.display = 'none'; resolve(true) }
+    const onCancel = () => { modal.style.display = 'none'; resolve(false) }
+    okBtn.addEventListener('click', onOk, { once: true })
+    cancelBtn.addEventListener('click', onCancel, { once: true })
   })
 }
 
