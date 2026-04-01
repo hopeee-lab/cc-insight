@@ -205,6 +205,86 @@ export function getTopicsOverview({ after }) {
   `).all(after)
 }
 
+// ── Insights / Efficiency 查询 ──
+
+export function getAvgRoundsByTopic({ after }) {
+  return getDb().prepare(`
+    SELECT topic, ROUND(AVG(message_count), 1) as avgRounds
+    FROM sessions
+    WHERE start_time >= ? AND topic IS NOT NULL
+    GROUP BY topic
+    ORDER BY avgRounds DESC
+  `).all(after)
+}
+
+export function getDurationByTopic({ after }) {
+  return getDb().prepare(`
+    SELECT topic,
+           SUM(MIN(duration_sec, 14400)) as totalSec,
+           ROUND(SUM(MIN(duration_sec, 14400)) * 100.0
+             / SUM(SUM(MIN(duration_sec, 14400))) OVER (), 1) as pct
+    FROM sessions
+    WHERE start_time >= ? AND topic IS NOT NULL
+    GROUP BY topic
+    ORDER BY totalSec DESC
+  `).all(after)
+}
+
+export function getToolDensityByTopic({ after }) {
+  return getDb().prepare(`
+    SELECT topic,
+           ROUND(AVG(CAST(tool_use_count AS REAL) / NULLIF(message_count, 0)), 2) as density
+    FROM sessions
+    WHERE start_time >= ? AND topic IS NOT NULL AND message_count > 0
+    GROUP BY topic
+    ORDER BY density DESC
+  `).all(after)
+}
+
+export function getTimeTopicHeatmap({ after }) {
+  return getDb().prepare(`
+    SELECT strftime('%H', start_time / 1000, 'unixepoch', '+8 hours') as hour,
+           topic,
+           COUNT(*) as count
+    FROM sessions
+    WHERE start_time >= ? AND topic IS NOT NULL
+    GROUP BY hour, topic
+    ORDER BY hour
+  `).all(after)
+}
+
+export function getOutlierSessions({ after }) {
+  return getDb().prepare(`
+    WITH avg_mc AS (
+      SELECT AVG(message_count) as v FROM sessions WHERE start_time >= ?
+    )
+    SELECT s.topic,
+           s.message_count  as messageCount,
+           s.jsonl_file     as jsonlFile,
+           s.start_time     as startTime
+    FROM sessions s, avg_mc
+    WHERE s.start_time >= ?
+      AND avg_mc.v > 0
+      AND s.message_count > avg_mc.v * 2
+      AND s.topic IS NOT NULL
+    ORDER BY s.message_count DESC
+    LIMIT 10
+  `).all(after, after)
+}
+
+export function getProjectDist({ after }) {
+  return getDb().prepare(`
+    SELECT COALESCE(project_path, '未知') as project,
+           COUNT(*) as count,
+           ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) as pct
+    FROM sessions
+    WHERE start_time >= ?
+    GROUP BY project
+    ORDER BY count DESC
+    LIMIT 8
+  `).all(after)
+}
+
 export function getTopicKeywords({ after }) {
   const rows = getDb().prepare(`
     SELECT topic, topic_keywords

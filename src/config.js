@@ -8,7 +8,7 @@ export function getClaudeDir() {
 }
 
 export function getAppDir() {
-  return path.join(os.homedir(), '.cc-insight')
+  return process.env.CC_INSIGHT_APP_DIR ?? path.join(os.homedir(), '.cc-insight')
 }
 
 export function getDbPath() {
