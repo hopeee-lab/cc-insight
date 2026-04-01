@@ -2,3 +2,5 @@ node_modules/
 .cc-insight/
 .DS_Store
 .superpowers/
+*-this-session-is-being-continued-*.txt
+pic/
