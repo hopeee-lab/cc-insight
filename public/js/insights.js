@@ -273,8 +273,8 @@ function renderHeatmap(el, rows) {
   const headerCells = topics.map(t => `
     <div style="flex:1;display:flex;justify-content:center;">
       <span style="font-size:10px;color:${topicColor(t)};
-        writing-mode:vertical-rl;transform:rotate(180deg);
-        overflow:hidden;max-height:56px;letter-spacing:1px;">${t}</span>
+        writing-mode:vertical-rl;
+        overflow:hidden;max-height:80px;letter-spacing:1px;">${t}</span>
     </div>`
   ).join('')
 
