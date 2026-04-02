@@ -36,9 +36,7 @@ function topicCellColor(topic, count, maxCount) {
   return `rgba(${rgb},${alpha})`
 }
 
-const CARD_HEIGHT      = 300
-const PAGE_SIZE        = 5
-const PAGE_SIZE_OUTLIERS = 5
+const CARD_HEIGHT = 300
 
 function rangeFilter(current) {
   const ranges = [
@@ -64,11 +62,6 @@ function projectName(p) {
   if (p === home) return '~'
   if (p.startsWith(home + '/')) return '~' + p.slice(home.length)
   return parts.filter(Boolean).pop() ?? p
-}
-
-function parseKeywords(raw) {
-  if (!raw) return []
-  try { return JSON.parse(raw) } catch { return [] }
 }
 
 function summaryCards(data) {
@@ -122,42 +115,14 @@ function summaryCards(data) {
     </div>`
 }
 
-// ── 通用翻页渲染器 ──
-function renderPaged(el, rows, pageSize, renderItem, emptyMsg = '暂无数据') {
+// ── 容器内滚动渲染器（替代翻页）──
+function renderScrollable(el, rows, renderItem, emptyMsg = '暂无数据') {
   if (!rows || rows.length === 0) {
     el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">${emptyMsg}</div>`
     return
   }
-
-  let page = 0
-  const totalPages = Math.ceil(rows.length / pageSize)
-
-  const btnStyle = `background:transparent;border:none;cursor:pointer;
-    color:var(--muted);font-size:14px;padding:0 6px;font-family:var(--font);`
-
-  function render() {
-    const slice = rows.slice(page * pageSize, (page + 1) * pageSize)
-    const pagination = totalPages > 1 ? `
-      <div style="display:flex;align-items:center;justify-content:flex-end;
-        gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">
-        ${page > 0
-          ? `<button class="pg-prev" style="${btnStyle}">&#8249;</button>`
-          : `<span style="color:var(--bg3);font-size:14px;padding:0 6px;">&#8249;</span>`}
-        <span style="font-size:11px;color:var(--muted);">${page + 1} / ${totalPages}</span>
-        ${page < totalPages - 1
-          ? `<button class="pg-next" style="${btnStyle}">&#8250;</button>`
-          : `<span style="color:var(--bg3);font-size:14px;padding:0 6px;">&#8250;</span>`}
-      </div>` : ''
-
-    el.innerHTML = `
-      <div style="flex:1;min-height:0;">${slice.map(renderItem).join('')}</div>
-      ${pagination}`
-
-    el.querySelector('.pg-prev')?.addEventListener('click', () => { page--; render() })
-    el.querySelector('.pg-next')?.addEventListener('click', () => { page++; render() })
-  }
-
-  render()
+  el.style.overflowY = 'auto'
+  el.innerHTML = rows.map(renderItem).join('')
 }
 
 export async function renderInsightsPage(container, range) {
@@ -169,8 +134,8 @@ export async function renderInsightsPage(container, range) {
   container.style.display = 'flex'
   container.style.flexDirection = 'column'
 
-  const cardStyle   = `height:${CARD_HEIGHT}px;display:flex;flex-direction:column;`
-  const contentStyle = `flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;`
+  const cardStyle    = `height:${CARD_HEIGHT}px;display:flex;flex-direction:column;`
+  const contentStyle = `flex:1;min-height:0;overflow-y:auto;`
 
   container.innerHTML = `
     ${rangeFilter(range)}
@@ -186,18 +151,18 @@ export async function renderInsightsPage(container, range) {
           <div id="ins-density" style="${contentStyle}"></div>
         </div>
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
-          <div id="ins-heatmap" style="${contentStyle}"></div>
+          <div class="section-header"><span class="section-title">项目分布</span></div>
+          <div id="ins-projects" style="${contentStyle}"></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">Session 明细</span></div>
-          <div id="ins-outliers" style="${contentStyle}"></div>
+          <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
+          <div id="ins-heatmap" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;"></div>
         </div>
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">项目分布</span></div>
-          <div id="ins-projects" style="${contentStyle}"></div>
+          <div class="section-header"><span class="section-title">Session 明细</span></div>
+          <div id="ins-outliers" style="${contentStyle}"></div>
         </div>
       </div>
     </div>`
@@ -237,7 +202,7 @@ function barItem(topic, label, pct) {
 function renderRounds(el, rows, durationRows) {
   const max    = Math.max(...(rows ?? []).map(r => r.avgRounds), 1)
   const pctMap = Object.fromEntries((durationRows ?? []).map(r => [r.topic, r.pct]))
-  renderPaged(el, rows, PAGE_SIZE, r => {
+  renderScrollable(el, rows, r => {
     const pct   = pctMap[r.topic] ?? null
     const label = pct !== null ? `${r.avgRounds} 轮 · ${pct}%` : `${r.avgRounds} 轮`
     return barItem(r.topic, label, r.avgRounds / max * 100)
@@ -246,7 +211,7 @@ function renderRounds(el, rows, durationRows) {
 
 function renderDensity(el, rows) {
   const max = Math.max(...(rows ?? []).map(r => r.density), 1)
-  renderPaged(el, rows, PAGE_SIZE,
+  renderScrollable(el, rows,
     r => barItem(r.topic, `${r.density} 次/轮`, r.density / max * 100))
 }
 
@@ -269,7 +234,7 @@ function renderHeatmap(el, rows) {
   const LABEL_W = '22px'
   const GAP     = '3px'
 
-  // 竖排话题标签
+  // 竖排话题标签（writing-mode:vertical-rl 中文从上到下，不需要 rotate）
   const headerCells = topics.map(t => `
     <div style="flex:1;display:flex;justify-content:center;">
       <span style="font-size:10px;color:${topicColor(t)};
@@ -310,7 +275,7 @@ function renderOutliers(el, rows) {
     return new Date(ms).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
   }
 
-  renderPaged(el, rows, PAGE_SIZE_OUTLIERS, r => {
+  renderScrollable(el, rows, r => {
     const msg     = r.firstUserMsg ?? '—'
     const preview = msg.length > 40 ? msg.slice(0, 40) + '…' : msg
     return `
@@ -335,7 +300,7 @@ function renderProjects(el, rows) {
     'var(--green)', 'var(--cyan)', 'var(--amber)', 'var(--purple)',
     'var(--red)', '#f97316', '#06b6d4', 'var(--muted)',
   ]
-  renderPaged(el, rows, PAGE_SIZE, r => {
+  renderScrollable(el, rows, r => {
     const color = COLORS[rows.indexOf(r)] ?? 'var(--muted)'
     return `
       <div style="margin-bottom:10px;">
