@@ -67,7 +67,7 @@ function projectName(p) {
 function summaryCards(data) {
   const { roundsByTopic, durationByTopic, densityByTopic, projectDist, outlierSessions } = data
   const topDensity  = densityByTopic[0]
-  const topProject  = projectDist[0]
+  const topProject  = (projectDist ?? []).find(r => projectName(r.project) !== '~')
   const topOutlier  = outlierSessions[0]
 
   const inefficient = roundsByTopic[0]
@@ -151,7 +151,7 @@ export async function renderInsightsPage(container, range) {
           <div id="ins-density" style="${contentStyle}"></div>
         </div>
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">项目分布</span></div>
+          <div class="section-header"><span class="section-title">项目分布 — 活跃目录</span></div>
           <div id="ins-projects" style="${contentStyle}"></div>
         </div>
       </div>
@@ -161,7 +161,7 @@ export async function renderInsightsPage(container, range) {
           <div id="ins-heatmap" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;"></div>
         </div>
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">Session 明细</span></div>
+          <div class="section-header"><span class="section-title">Session 明细 — 高轮次对话</span></div>
           <div id="ins-outliers" style="${contentStyle}"></div>
         </div>
       </div>
@@ -305,8 +305,9 @@ function renderProjects(el, rows) {
     'var(--green)', 'var(--cyan)', 'var(--amber)', 'var(--purple)',
     'var(--red)', '#f97316', '#06b6d4', 'var(--muted)',
   ]
-  renderScrollable(el, rows, r => {
-    const color = COLORS[rows.indexOf(r)] ?? 'var(--muted)'
+  const filtered = (rows ?? []).filter(r => projectName(r.project) !== '~')
+  renderScrollable(el, filtered, r => {
+    const color = COLORS[filtered.indexOf(r)] ?? 'var(--muted)'
     return `
       <div style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
