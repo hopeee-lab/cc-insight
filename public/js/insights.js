@@ -247,27 +247,29 @@ function renderHeatmap(el, rows) {
       </div>
     </div>`
 
-  // 每个话题一行
+  // 每个话题一行（flex:1 撑满可用高度）
   const topicRows = topics.map(t => {
     const cells = hours.map(h => {
       const cnt = lookup[t]?.[h] ?? 0
       return `<div title="${h}:00 · ${t} · ${cnt} sessions"
-        style="flex:1;height:${ROW_H};border-radius:3px;
+        style="flex:1;border-radius:3px;
           background:${topicCellColor(t, cnt, maxCount)};"></div>`
     }).join('')
     return `
-      <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:${GAP};">
+      <div style="display:flex;align-items:stretch;gap:${GAP};flex:1;">
         <span style="width:${LABEL_W};flex-shrink:0;font-size:10px;color:${topicColor(t)};
           overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;
-          padding-right:6px;">${t}</span>
+          padding-right:6px;display:flex;align-items:center;justify-content:flex-end;">${t}</span>
         <div style="display:flex;flex:1;gap:${GAP};">${cells}</div>
       </div>`
   }).join('')
 
   el.innerHTML = `
-    <div style="display:flex;flex-direction:column;padding-top:4px;">
+    <div style="display:flex;flex-direction:column;height:100%;padding-top:4px;gap:${GAP};">
       ${hourHeader}
-      ${topicRows}
+      <div style="display:flex;flex-direction:column;flex:1;gap:${GAP};">
+        ${topicRows}
+      </div>
     </div>`
 }
 
@@ -280,7 +282,7 @@ function renderOutliers(el, rows) {
 
   renderScrollable(el, rows, r => {
     const msg     = r.firstUserMsg ?? '—'
-    const preview = msg.length > 80 ? msg.slice(0, 80) + '…' : msg
+    const preview = msg.length > 70 ? msg.slice(0, 70) + '…' : msg
     return `
       <div style="background:var(--bg3);border-radius:4px;padding:7px 10px;
         margin-bottom:5px;border-left:3px solid ${topicColor(r.topic)};">
