@@ -233,7 +233,7 @@ export function getDurationByTopic({ after }) {
 export function getToolDensityByTopic({ after }) {
   return getDb().prepare(`
     SELECT topic,
-           ROUND(AVG(CAST(tool_use_count AS REAL) / NULLIF(message_count, 0)), 2) as density
+           ROUND(AVG(CAST(tool_use_count AS REAL) / NULLIF(message_count / 2.0, 0)), 2) as density
     FROM sessions
     WHERE start_time >= ? AND topic IS NOT NULL AND message_count > 0
     GROUP BY topic

@@ -233,9 +233,8 @@ function renderHeatmap(el, rows) {
 
   const LABEL_W = '72px'
   const GAP     = '3px'
-  const ROW_H   = '18px'
 
-  // X 轴小时标签行
+  // X 轴小时标签行（宽度与格子对齐）
   const hourHeader = `
     <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:4px;">
       <span style="width:${LABEL_W};flex-shrink:0;"></span>
@@ -246,29 +245,27 @@ function renderHeatmap(el, rows) {
       </div>
     </div>`
 
-  // 每个话题一行（flex:1 撑满可用高度）
+  // 每个话题一行；格子 aspect-ratio:1 保证正方形，行高由格子宽度决定
   const topicRows = topics.map(t => {
     const cells = hours.map(h => {
       const cnt = lookup[t]?.[h] ?? 0
       return `<div title="${h}:00 · ${t} · ${cnt} sessions"
-        style="flex:1;border-radius:3px;
+        style="flex:1;aspect-ratio:1;border-radius:2px;
           background:${topicCellColor(t, cnt, maxCount)};"></div>`
     }).join('')
     return `
-      <div style="display:flex;align-items:stretch;gap:${GAP};flex:1;">
+      <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:${GAP};">
         <span style="width:${LABEL_W};flex-shrink:0;font-size:10px;color:${topicColor(t)};
           overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;
-          padding-right:6px;display:flex;align-items:center;justify-content:flex-end;">${t}</span>
+          padding-right:6px;">${t}</span>
         <div style="display:flex;flex:1;gap:${GAP};">${cells}</div>
       </div>`
   }).join('')
 
   el.innerHTML = `
-    <div style="display:flex;flex-direction:column;height:100%;padding-top:4px;gap:${GAP};">
+    <div style="padding-top:4px;">
       ${hourHeader}
-      <div style="display:flex;flex-direction:column;flex:1;gap:${GAP};">
-        ${topicRows}
-      </div>
+      ${topicRows}
     </div>`
 }
 
