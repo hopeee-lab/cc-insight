@@ -169,7 +169,7 @@ function renderHeatmap(el, data) {
         <style>#heatmap-scroll::-webkit-scrollbar{height:3px}
           #heatmap-scroll::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
         </style>
-        <div style="display:flex;gap:${GAP}px;">${weeksHtml}</div>
+        <div style="display:flex;gap:${GAP}px;justify-content:flex-end;min-width:100%;">${weeksHtml}</div>
       </div>
     </div>
     <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
