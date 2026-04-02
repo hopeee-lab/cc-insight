@@ -149,39 +149,60 @@ function renderHeatmap(el, data) {
     weeks.push(week)
   }
 
-  const weeksHtml = weeks.map(week => `
-    <div style="display:flex;flex-direction:column;gap:${GAP}px;flex-shrink:0;">
-      ${week.map(cell => `
-        <div title="${cell.day}: ${cell.count} sessions"
-          style="width:${CELL}px;height:${CELL}px;border-radius:2px;
-            background:${intensity(cell.count)};cursor:default;"></div>`).join('')}
-    </div>`).join('')
+  function weekCol(week, isPlaceholder = false) {
+    return `
+      <div style="display:flex;flex-direction:column;gap:${GAP}px;flex-shrink:0;">
+        ${week.map(cell => `
+          <div ${isPlaceholder ? '' : `title="${cell.day}: ${cell.count} sessions"`}
+            style="width:${CELL}px;height:${CELL}px;border-radius:2px;
+              background:${isPlaceholder ? 'transparent' : intensity(cell.count)};
+              cursor:default;"></div>`).join('')}
+      </div>`
+  }
 
-  el.innerHTML = `
-    <div style="display:flex;gap:${GAP}px;align-items:flex-start;">
-      <div style="display:flex;flex-direction:column;gap:${GAP}px;
-        width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
-        ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;
-          color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
-      </div>
-      <div id="heatmap-scroll" style="overflow-x:auto;flex:1;
-        scrollbar-width:thin;scrollbar-color:var(--bg3) transparent;">
-        <style>#heatmap-scroll::-webkit-scrollbar{height:3px}
-          #heatmap-scroll::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
-        </style>
-        <div style="display:flex;gap:${GAP}px;justify-content:flex-end;min-width:100%;">${weeksHtml}</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
-      <span style="font-size:11px;color:var(--muted);">少</span>
-      ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
-        `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
-      <span style="font-size:11px;color:var(--muted);">多</span>
-    </div>`
+  const emptyWeek = Array(7).fill({ day: '', count: 0 })
 
-  // 默认滚到最右（最近日期）
-  const scrollEl = el.querySelector('#heatmap-scroll')
-  if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth
+  function render(containerW) {
+    const fittable = Math.floor((containerW - LABEL_W) / (CELL + GAP))
+    const padCount = Math.max(0, fittable - weeks.length)
+    const padHtml  = Array(padCount).fill(null).map(() => weekCol(emptyWeek, true)).join('')
+    const dataHtml = weeks.map(w => weekCol(w)).join('')
+
+    el.innerHTML = `
+      <div style="display:flex;gap:${GAP}px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:${GAP}px;
+          width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
+          ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;
+            color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
+        </div>
+        <div id="heatmap-scroll" style="overflow-x:auto;flex:1;
+          scrollbar-width:thin;scrollbar-color:var(--bg3) transparent;">
+          <style>#heatmap-scroll::-webkit-scrollbar{height:3px}
+            #heatmap-scroll::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+          </style>
+          <div style="display:flex;gap:${GAP}px;">${padHtml}${dataHtml}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
+        <span style="font-size:11px;color:var(--muted);">少</span>
+        ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
+          `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
+        <span style="font-size:11px;color:var(--muted);">多</span>
+      </div>`
+
+    const scrollEl = el.querySelector('#heatmap-scroll')
+    if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth
+  }
+
+  render(el.clientWidth || 600)
+
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0].contentRect.width
+      if (w > 10 && Math.abs(w - (el._lastW ?? 0)) > 4) { el._lastW = w; render(w) }
+    })
+    ro.observe(el)
+  }
 }
 
 // ── 24H Distribution ──
