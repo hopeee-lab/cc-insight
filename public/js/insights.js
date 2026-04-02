@@ -46,15 +46,30 @@ function projectName(p) {
   return parts.filter(Boolean).pop() ?? p
 }
 
+function parseKeywords(raw) {
+  if (!raw) return []
+  try { return JSON.parse(raw) } catch { return [] }
+}
+
 function summaryCards(data) {
-  const { roundsByTopic, durationByTopic, densityByTopic, projectDist } = data
-  const topDensity = densityByTopic[0]
-  const topProject = projectDist[0]
+  const { roundsByTopic, durationByTopic, densityByTopic, projectDist, outlierSessions } = data
+  const topDensity  = densityByTopic[0]
+  const topProject  = projectDist[0]
+  const topOutlier  = outlierSessions[0]
 
   // 合并：最低效话题（轮数最多）+ 时间占比
-  const inefficient  = roundsByTopic[0]
-  const durationMap  = Object.fromEntries((durationByTopic ?? []).map(r => [r.topic, r.pct]))
-  const ineffPct     = inefficient ? (durationMap[inefficient.topic] ?? null) : null
+  const inefficient = roundsByTopic[0]
+  const durationMap = Object.fromEntries((durationByTopic ?? []).map(r => [r.topic, r.pct]))
+  const ineffPct    = inefficient ? (durationMap[inefficient.topic] ?? null) : null
+  const ineffSub    = inefficient
+    ? `平均 ${inefficient.avgRounds} 轮${ineffPct !== null ? ` · 时长占 ${ineffPct}%` : ''}`
+    : '暂无数据'
+
+  // Session 轮次最多：关键词摘要
+  const outlierKws  = topOutlier ? parseKeywords(topOutlier.topicKeywords).slice(0, 3).join(' · ') : ''
+  const outlierSub  = topOutlier
+    ? (outlierKws || topOutlier.topic || '—')
+    : '暂无数据'
 
   function card(label, value, sub, color) {
     return `
@@ -63,13 +78,9 @@ function summaryCards(data) {
         <div class="card-value" style="color:${color};font-size:20px;word-break:break-all;">
           ${value}
         </div>
-        <div class="card-sub">${sub}</div>
+        <div class="card-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sub}</div>
       </div>`
   }
-
-  const ineffSub = inefficient
-    ? `平均 ${inefficient.avgRounds} 轮${ineffPct !== null ? ` · 时长占 ${ineffPct}%` : ''}`
-    : '暂无数据'
 
   return `
     <div class="grid-4" style="margin-bottom:14px;">
@@ -77,6 +88,10 @@ function summaryCards(data) {
         inefficient ? inefficient.topic : '—',
         ineffSub,
         'var(--red)')}
+      ${card('Session 轮次最多',
+        topOutlier ? `${topOutlier.messageCount} 轮` : '—',
+        outlierSub,
+        'var(--amber)')}
       ${card('工具密度高',
         topDensity ? topDensity.topic : '—',
         topDensity ? `${topDensity.density} 次/轮` : '暂无数据',
