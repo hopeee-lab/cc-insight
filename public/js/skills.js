@@ -1,6 +1,9 @@
 // public/js/skills.js
 import { setRange } from './app.js'
 
+// 跨 renderSkills 调用保持翻页位置
+const _state = { topPage: 0, unusedPage: 0, listPage: 0, listFilter: 'all' }
+
 function rangeFilter(current) {
   const ranges = [
     { value: '7d',  label: '7 天' },
@@ -199,23 +202,26 @@ export function buildUnusedToolsHtml(tools, page = 0) {
 }
 
 function renderTopTools(el, tools, range) {
-  let page = 0
+  const max = Math.ceil(tools.filter(t => (t.allTimeUseCount ?? 0) > 0).length / LIST_PAGE_SIZE) - 1
+  _state.topPage = Math.min(_state.topPage, Math.max(max, 0))
   function render() {
-    el.innerHTML = buildTopToolsHtml(tools, range, page)
-    el.querySelector('.top-prev-btn')?.addEventListener('click', () => { page--; render() })
-    el.querySelector('.top-next-btn')?.addEventListener('click', () => { page++; render() })
+    el.innerHTML = buildTopToolsHtml(tools, range, _state.topPage)
+    el.querySelector('.top-prev-btn')?.addEventListener('click', () => { _state.topPage--; render(); el.scrollTop = 0 })
+    el.querySelector('.top-next-btn')?.addEventListener('click', () => { _state.topPage++; render(); el.scrollTop = 0 })
   }
   render()
 }
 
 function renderUnusedTools(el, tools) {
-  let page = 0
+  const unusedCount = tools.filter(t => (t.allTimeUseCount ?? 0) === 0).length
+  const max = Math.ceil(unusedCount / LIST_PAGE_SIZE) - 1
+  _state.unusedPage = Math.min(_state.unusedPage, Math.max(max, 0))
   function render() {
-    const html = buildUnusedToolsHtml(tools, page)
+    const html = buildUnusedToolsHtml(tools, _state.unusedPage)
     el.innerHTML = html ?? ''
     el.style.display = html ? '' : 'none'
-    el.querySelector('.unused-prev-btn')?.addEventListener('click', () => { page--; render() })
-    el.querySelector('.unused-next-btn')?.addEventListener('click', () => { page++; render() })
+    el.querySelector('.unused-prev-btn')?.addEventListener('click', () => { _state.unusedPage--; render(); el.scrollTop = 0 })
+    el.querySelector('.unused-next-btn')?.addEventListener('click', () => { _state.unusedPage++; render(); el.scrollTop = 0 })
   }
   render()
 }
@@ -549,31 +555,28 @@ function bindDetailButtons(container) {
 }
 
 function renderToolsList(el, tools, range, onDeleted) {
-  let currentFilter = 'all'
-  let currentPage = 0
-
   function filtered() {
-    if (currentFilter === 'all')  return tools
-    if (currentFilter === 'dust') return tools.filter(isDust)
-    return tools.filter(t => t.type === currentFilter)
+    if (_state.listFilter === 'all')  return tools
+    if (_state.listFilter === 'dust') return tools.filter(isDust)
+    return tools.filter(t => t.type === _state.listFilter)
   }
 
-  function render(resetScroll = false) {
-    const savedScroll = resetScroll ? 0 : (el.scrollTop ?? 0)
-    el.innerHTML = buildToolsListHtml(tools, filtered(), currentFilter, currentPage, range)
-    if (savedScroll > 0) el.scrollTop = savedScroll
-    // tab 点击
+  function render(scrollToTop = false) {
+    const savedScroll = scrollToTop ? 0 : (el.scrollTop ?? 0)
+    el.innerHTML = buildToolsListHtml(tools, filtered(), _state.listFilter, _state.listPage, range)
+    el.scrollTop = savedScroll
+    // tab 点击 → 重置到第一页
     el.querySelectorAll('.filter-tab').forEach(btn => {
       btn.addEventListener('click', () => {
-        currentFilter = btn.dataset.filter
-        currentPage = 0
-        render(false)
+        _state.listFilter = btn.dataset.filter
+        _state.listPage = 0
+        render(true)
       })
     })
-    // 翻页
+    // 翻页 → 滚到顶部
     el.querySelectorAll('.page-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        currentPage += parseInt(btn.dataset.dir)
+        _state.listPage += parseInt(btn.dataset.dir)
         render(true)
       })
     })
@@ -581,6 +584,9 @@ function renderToolsList(el, tools, range, onDeleted) {
     bindDetailButtons(el)
   }
 
+  // 恢复时 clamp 到有效页范围
+  const total = Math.ceil(filtered().length / PAGE_SIZE)
+  _state.listPage = Math.min(_state.listPage, Math.max(total - 1, 0))
   render()
 }
 
