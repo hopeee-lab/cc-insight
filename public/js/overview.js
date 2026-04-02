@@ -117,9 +117,10 @@ function renderHeatmap(el, data) {
   const map = Object.fromEntries(data.map(r => [r.day, r.count]))
   const max = Math.max(...Object.values(map), 1)
 
-  const CELL = 12
-  const GAP  = 3
-  const LABEL_W = 28
+  const CELL_MIN = 11
+  const CELL_MAX = 18
+  const GAP      = 3
+  const LABEL_W  = 28
 
   function intensity(count) {
     if (count === 0) return 'var(--bg3)'
@@ -132,11 +133,10 @@ function renderHeatmap(el, data) {
 
   const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', '']
 
-  // 从最早数据对齐到周一，一直到今天生成所有列
+  // 从最早数据对齐到周一，生成所有周
   const today = new Date()
-  const earliest = new Date(data[0].day)
-  const start = new Date(earliest)
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7))  // 对齐到周一
+  const start = new Date(data[0].day)
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
 
   const weeks = []
   let cur = new Date(start)
@@ -150,37 +150,63 @@ function renderHeatmap(el, data) {
     weeks.push(week)
   }
 
-  el.innerHTML = `
-    <div style="display:flex;gap:${GAP}px;">
-      <div style="display:flex;flex-direction:column;gap:${GAP}px;width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
-        ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
-      </div>
-      <div id="heatmap-scroll" style="overflow-x:auto;flex:1;
-        scrollbar-width:thin;scrollbar-color:var(--bg3) transparent;">
-        <style>#heatmap-scroll::-webkit-scrollbar{height:3px}
-          #heatmap-scroll::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}</style>
-        <div style="display:flex;gap:${GAP}px;min-width:100%;">
-          ${weeks.map(week => `
-            <div style="display:flex;flex-direction:column;gap:${GAP}px;flex:1;min-width:${CELL}px;">
-              ${week.map(cell => `
-                <div title="${cell.day}: ${cell.count} sessions"
-                  style="width:100%;aspect-ratio:1;border-radius:2px;
-                    background:${intensity(cell.count)};cursor:default;">
-                </div>`).join('')}
-            </div>`).join('')}
+  function buildHtml(cellSize) {
+    const weeksHtml = weeks.map(week => `
+      <div style="display:flex;flex-direction:column;gap:${GAP}px;flex-shrink:0;">
+        ${week.map(cell => `
+          <div title="${cell.day}: ${cell.count} sessions"
+            style="width:${cellSize}px;height:${cellSize}px;border-radius:2px;
+              background:${intensity(cell.count)};cursor:default;"></div>`).join('')}
+      </div>`).join('')
+
+    return `
+      <div style="display:flex;gap:${GAP}px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:${GAP}px;
+          width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
+          ${dayLabels.map(l => `<div style="height:${cellSize}px;font-size:10px;
+            color:var(--muted);line-height:${cellSize}px;">${l}</div>`).join('')}
+        </div>
+        <div id="heatmap-scroll" style="overflow-x:auto;flex:1;
+          scrollbar-width:thin;scrollbar-color:var(--bg3) transparent;">
+          <style>#heatmap-scroll::-webkit-scrollbar{height:3px}
+            #heatmap-scroll::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+          </style>
+          <div style="display:flex;gap:${GAP}px;">${weeksHtml}</div>
         </div>
       </div>
-    </div>
-    <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
-      <span style="font-size:11px;color:var(--muted);">少</span>
-      ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
-        `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
-      <span style="font-size:11px;color:var(--muted);">多</span>
-    </div>`
+      <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
+        <span style="font-size:11px;color:var(--muted);">少</span>
+        ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
+          `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
+        <span style="font-size:11px;color:var(--muted);">多</span>
+      </div>`
+  }
 
-  // 默认滚到最右（最近日期）
-  const scrollEl = el.querySelector('#heatmap-scroll')
-  if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth
+  function calcCellSize(containerW) {
+    const available = containerW - LABEL_W - (weeks.length - 1) * GAP
+    const size = Math.floor(available / weeks.length)
+    return Math.min(Math.max(size, CELL_MIN), CELL_MAX)
+  }
+
+  function render(containerW) {
+    const cellSize = calcCellSize(containerW)
+    el.innerHTML = buildHtml(cellSize)
+    const scrollEl = el.querySelector('#heatmap-scroll')
+    if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth
+  }
+
+  render(el.clientWidth || 400)
+
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0].contentRect.width
+      if (w > 10 && Math.abs(w - (el._lastW ?? 0)) > 5) {
+        el._lastW = w
+        render(w)
+      }
+    })
+    ro.observe(el)
+  }
 }
 
 // ── 24H Distribution ──
