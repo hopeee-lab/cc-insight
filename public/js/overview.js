@@ -109,6 +109,11 @@ export async function renderOverview(container, range, preserveScroll = true) {
 
 // ── Heatmap ──
 function renderHeatmap(el, data) {
+  if (!data || data.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:8px 0;">暂无数据</div>`
+    return
+  }
+
   const map = Object.fromEntries(data.map(r => [r.day, r.count]))
   const max = Math.max(...Object.values(map), 1)
 
@@ -127,60 +132,31 @@ function renderHeatmap(el, data) {
 
   const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', '']
 
-  // 计算容器能放多少周（页容量）
-  function calcPageSize(containerW) {
-    const usable = containerW - LABEL_W - GAP
-    return Math.max(4, Math.floor((usable + GAP) / (CELL + GAP)))
+  // 从最早数据对齐到周一，一直到今天生成所有列
+  const today = new Date()
+  const earliest = new Date(data[0].day)
+  const start = new Date(earliest)
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7))  // 对齐到周一
+
+  const weeks = []
+  let cur = new Date(start)
+  while (cur <= today) {
+    const week = []
+    for (let d = 0; d < 7; d++) {
+      const key = cur.toISOString().slice(0, 10)
+      week.push({ day: key, count: map[key] ?? 0 })
+      cur.setDate(cur.getDate() + 1)
+    }
+    weeks.push(week)
   }
 
-  // 始终生成 pageSize 列，通过 pageOffset 向历史平移
-  function buildGrid(pageSize, pageOffset) {
-    const today = new Date()
-    // 当前页的末尾锚点：pageOffset=0 为今天，每页向前推 pageSize 周
-    const endAnchor = new Date(today)
-    endAnchor.setDate(endAnchor.getDate() - pageOffset * pageSize * 7)
-
-    // 起始锚点：末尾往前 pageSize 周，对齐到周一
-    const startAnchor = new Date(endAnchor)
-    startAnchor.setDate(endAnchor.getDate() - pageSize * 7)
-    startAnchor.setDate(startAnchor.getDate() - ((startAnchor.getDay() + 6) % 7))
-
-    const weeks = []
-    let cur = new Date(startAnchor)
-    while (cur <= endAnchor) {
-      const week = []
-      for (let d = 0; d < 7; d++) {
-        const key = cur.toISOString().slice(0, 10)
-        week.push({ day: key, count: map[key] ?? 0 })
-        cur.setDate(cur.getDate() + 1)
-      }
-      weeks.push(week)
-    }
-
-    // 是否有更早的数据
-    const viewStart = startAnchor.toISOString().slice(0, 10)
-    const canPrev = data.some(r => r.day < viewStart)
-    const canNext = pageOffset > 0
-
-    const btnStyle = `background:transparent;border:none;cursor:pointer;
-       color:var(--muted);font-size:14px;padding:0 4px;font-family:var(--font);`
-
-    const paginationHtml = (canPrev || canNext) ? `
-      <div style="display:flex;align-items:center;gap:2px;">
-        ${canPrev ? `<button class="heatmap-prev" style="${btnStyle}">&lt;</button>` : ''}
-        ${canNext ? `<button class="heatmap-next" style="${btnStyle}">&gt;</button>` : ''}
-      </div>` : ''
-
-    return { html: `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:11px;color:var(--muted);">${weeks[0]?.[0]?.day ?? ''}</span>
-        ${paginationHtml}
+  el.innerHTML = `
+    <div style="display:flex;gap:${GAP}px;">
+      <div style="display:flex;flex-direction:column;gap:${GAP}px;width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
+        ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
       </div>
-      <div style="display:flex;gap:${GAP}px;">
-        <div style="display:flex;flex-direction:column;gap:${GAP}px;width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
-          ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
-        </div>
-        <div style="display:flex;gap:${GAP}px;">
+      <div id="heatmap-scroll" style="overflow-x:auto;flex:1;">
+        <div style="display:flex;gap:${GAP}px;width:max-content;">
           ${weeks.map(week => `
             <div style="display:flex;flex-direction:column;gap:${GAP}px;">
               ${week.map(cell => `
@@ -191,44 +167,17 @@ function renderHeatmap(el, data) {
             </div>`).join('')}
         </div>
       </div>
-      <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
-        <span style="font-size:11px;color:var(--muted);">少</span>
-        ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
-          `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
-        <span style="font-size:11px;color:var(--muted);">多</span>
-      </div>`, canPrev, canNext }
-  }
+    </div>
+    <div style="display:flex;gap:4px;align-items:center;margin-top:8px;">
+      <span style="font-size:11px;color:var(--muted);">少</span>
+      ${['var(--bg3)','#0e4429','#006d32','#26a641','#39d353'].map(c =>
+        `<div style="width:10px;height:10px;background:${c};border-radius:2px;"></div>`).join('')}
+      <span style="font-size:11px;color:var(--muted);">多</span>
+    </div>`
 
-  let pageSize = 16
-  let pageOffset = 0   // 0 = 最新一页
-
-  function render() {
-    const { html, canPrev, canNext } = buildGrid(pageSize, pageOffset)
-    el.innerHTML = html
-    el.querySelector('.heatmap-prev')?.addEventListener('click', () => {
-      if (canPrev) { pageOffset++; render() }
-    })
-    el.querySelector('.heatmap-next')?.addEventListener('click', () => {
-      if (canNext) { pageOffset--; render() }
-    })
-  }
-
-  render()
-
-  if (typeof ResizeObserver !== 'undefined') {
-    const ro = new ResizeObserver(entries => {
-      const w = entries[0].contentRect.width
-      if (w < 10) return
-      const newSize = calcPageSize(w)
-      if (el._lastPageSize !== newSize) {
-        el._lastPageSize = newSize
-        pageSize = newSize
-        pageOffset = 0
-        render()
-      }
-    })
-    ro.observe(el)
-  }
+  // 默认滚到最右（最近日期）
+  const scrollEl = el.querySelector('#heatmap-scroll')
+  if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth
 }
 
 // ── 24H Distribution ──
