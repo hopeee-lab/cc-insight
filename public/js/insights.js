@@ -12,13 +12,33 @@ const TOPIC_COLORS = {
   '其他':       'var(--muted)',
 }
 
+// 热力图用 rgba，支持按强度调节透明度
+const TOPIC_HEX = {
+  '调试修复':   '74,222,128',
+  '新功能开发': '34,211,238',
+  '架构设计':   '245,158,11',
+  '代码重构':   '167,139,250',
+  '学习探索':   '248,113,113',
+  '配置运维':   '6,182,212',
+  '数据分析':   '249,115,22',
+  '其他':       '107,114,128',
+}
+
 function topicColor(topic) {
   return TOPIC_COLORS[topic] ?? 'var(--muted)'
 }
 
-const CARD_HEIGHT = 300  // px，所有图表卡片统一高度
-const PAGE_SIZE   = 5    // 条形图每页条目数
-const PAGE_SIZE_OUTLIERS = 4
+function topicCellColor(topic, count, maxCount) {
+  if (!count) return 'var(--bg3)'
+  const rgb = TOPIC_HEX[topic] ?? '107,114,128'
+  const p = count / maxCount
+  const alpha = p < 0.25 ? 0.25 : p < 0.5 ? 0.5 : p < 0.75 ? 0.75 : 1.0
+  return `rgba(${rgb},${alpha})`
+}
+
+const CARD_HEIGHT      = 300
+const PAGE_SIZE        = 5
+const PAGE_SIZE_OUTLIERS = 5
 
 function rangeFilter(current) {
   const ranges = [
@@ -41,7 +61,7 @@ function projectName(p) {
   if (!p || p === '未知') return '未知'
   const parts = p.split('/')
   const home = '/Users/' + (parts[2] ?? '')
-  if (p === home) return '主目录项目'
+  if (p === home) return '~'
   if (p.startsWith(home + '/')) return '~' + p.slice(home.length)
   return parts.filter(Boolean).pop() ?? p
 }
@@ -57,7 +77,6 @@ function summaryCards(data) {
   const topProject  = projectDist[0]
   const topOutlier  = outlierSessions[0]
 
-  // 合并：最低效话题（轮数最多）+ 时间占比
   const inefficient = roundsByTopic[0]
   const durationMap = Object.fromEntries((durationByTopic ?? []).map(r => [r.topic, r.pct]))
   const ineffPct    = inefficient ? (durationMap[inefficient.topic] ?? null) : null
@@ -65,10 +84,10 @@ function summaryCards(data) {
     ? `平均 ${inefficient.avgRounds} 轮${ineffPct !== null ? ` · 时长占 ${ineffPct}%` : ''}`
     : '暂无数据'
 
-  // Session 轮次最多：关键词摘要
-  const outlierKws  = topOutlier ? parseKeywords(topOutlier.topicKeywords).slice(0, 3).join(' · ') : ''
-  const outlierSub  = topOutlier
-    ? (outlierKws || topOutlier.topic || '—')
+  const outlierSub = topOutlier
+    ? (topOutlier.firstUserMsg
+        ? topOutlier.firstUserMsg.slice(0, 28) + (topOutlier.firstUserMsg.length > 28 ? '…' : '')
+        : topOutlier.topic ?? '—')
     : '暂无数据'
 
   function card(label, value, sub, color) {
@@ -84,7 +103,7 @@ function summaryCards(data) {
 
   return `
     <div class="grid-4" style="margin-bottom:14px;">
-      ${card('最低效话题',
+      ${card('耗时话题',
         inefficient ? inefficient.topic : '—',
         ineffSub,
         'var(--red)')}
@@ -131,9 +150,7 @@ function renderPaged(el, rows, pageSize, renderItem, emptyMsg = '暂无数据') 
       </div>` : ''
 
     el.innerHTML = `
-      <div style="flex:1;min-height:0;">
-        ${slice.map(renderItem).join('')}
-      </div>
+      <div style="flex:1;min-height:0;">${slice.map(renderItem).join('')}</div>
       ${pagination}`
 
     el.querySelector('.pg-prev')?.addEventListener('click', () => { page--; render() })
@@ -152,16 +169,16 @@ export async function renderInsightsPage(container, range) {
   container.style.display = 'flex'
   container.style.flexDirection = 'column'
 
-  const cardStyle = `height:${CARD_HEIGHT}px;display:flex;flex-direction:column;`
+  const cardStyle   = `height:${CARD_HEIGHT}px;display:flex;flex-direction:column;`
   const contentStyle = `flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;`
 
   container.innerHTML = `
     ${rangeFilter(range)}
     <div class="insights-scroll" style="flex:1;min-height:0;overflow-y:auto;padding-bottom:20px;">
       ${summaryCards(data)}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">低效话题 — 轮数 & 时长占比</span></div>
+          <div class="section-header"><span class="section-title">耗时话题 — 轮数 & 时长占比</span></div>
           <div id="ins-rounds" style="${contentStyle}"></div>
         </div>
         <div class="card" style="${cardStyle}">
@@ -172,11 +189,13 @@ export async function renderInsightsPage(container, range) {
           <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
           <div id="ins-heatmap" style="${contentStyle}"></div>
         </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">低效 Session 列表</span></div>
+          <div class="section-header"><span class="section-title">Session 明细</span></div>
           <div id="ins-outliers" style="${contentStyle}"></div>
         </div>
-        <div class="card" style="grid-column:1/-1;${cardStyle}">
+        <div class="card" style="${cardStyle}">
           <div class="section-header"><span class="section-title">项目分布</span></div>
           <div id="ins-projects" style="${contentStyle}"></div>
         </div>
@@ -199,7 +218,7 @@ export async function renderInsightsPage(container, range) {
   }
 }
 
-// ── 条形图 item 渲染器 ──
+// ── 条形图 item ──
 function barItem(topic, label, pct) {
   const color = topicColor(topic)
   return `
@@ -216,10 +235,10 @@ function barItem(topic, label, pct) {
 }
 
 function renderRounds(el, rows, durationRows) {
-  const max = Math.max(...(rows ?? []).map(r => r.avgRounds), 1)
+  const max    = Math.max(...(rows ?? []).map(r => r.avgRounds), 1)
   const pctMap = Object.fromEntries((durationRows ?? []).map(r => [r.topic, r.pct]))
   renderPaged(el, rows, PAGE_SIZE, r => {
-    const pct = pctMap[r.topic] ?? null
+    const pct   = pctMap[r.topic] ?? null
     const label = pct !== null ? `${r.avgRounds} 轮 · ${pct}%` : `${r.avgRounds} 轮`
     return barItem(r.topic, label, r.avgRounds / max * 100)
   })
@@ -231,45 +250,40 @@ function renderDensity(el, rows) {
     r => barItem(r.topic, `${r.density} 次/轮`, r.density / max * 100))
 }
 
-// ── 时间规律热力图（flex 自适应宽度）──
+// ── 时间规律热力图（话题色 + 竖排标签）──
 function renderHeatmap(el, rows) {
   if (!rows || rows.length === 0) {
     el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
     return
   }
 
-  const topics = [...new Set(rows.map(r => r.topic))].slice(0, 8)
-  const hours  = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
-
-  const lookup = {}
+  const topics   = [...new Set(rows.map(r => r.topic))].slice(0, 8)
+  const hours    = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+  const lookup   = {}
   for (const r of rows) {
     if (!lookup[r.hour]) lookup[r.hour] = {}
     lookup[r.hour][r.topic] = r.count
   }
   const maxCount = Math.max(...rows.map(r => r.count), 1)
 
-  function cellColor(count) {
-    if (!count) return 'var(--bg3)'
-    const p = count / maxCount
-    if (p < 0.25) return '#0e4429'
-    if (p < 0.5)  return '#006d32'
-    if (p < 0.75) return '#26a641'
-    return '#39d353'
-  }
+  const LABEL_W = '22px'
+  const GAP     = '3px'
 
-  const LABEL_W = '24px'
-  const GAP = '3px'
-
-  const headerCells = topics.map(t =>
-    `<div style="flex:1;font-size:9px;color:${topicColor(t)};
-      text-align:center;overflow:hidden;white-space:nowrap;">${t.slice(0, 2)}</div>`
+  // 竖排话题标签
+  const headerCells = topics.map(t => `
+    <div style="flex:1;display:flex;justify-content:center;">
+      <span style="font-size:10px;color:${topicColor(t)};
+        writing-mode:vertical-rl;transform:rotate(180deg);
+        overflow:hidden;max-height:56px;letter-spacing:1px;">${t}</span>
+    </div>`
   ).join('')
 
   const hourRows = hours.filter((_, i) => i % 2 === 0).map(h => {
     const cells = topics.map(t => {
       const cnt = lookup[h]?.[t] ?? 0
-      return `<div title="${h}:00 · ${t} · ${cnt}"
-        style="flex:1;height:10px;border-radius:2px;background:${cellColor(cnt)};"></div>`
+      return `<div title="${h}:00 · ${t} · ${cnt} sessions"
+        style="flex:1;height:10px;border-radius:2px;
+          background:${topicCellColor(t, cnt, maxCount)};"></div>`
     }).join('')
     return `
       <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:2px;">
@@ -281,45 +295,38 @@ function renderHeatmap(el, rows) {
 
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;height:100%;">
-      <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:4px;">
+      <div style="display:flex;align-items:flex-end;gap:${GAP};margin-bottom:4px;min-height:60px;">
         <span style="width:${LABEL_W};flex-shrink:0;"></span>
         <div style="display:flex;flex:1;gap:${GAP};">${headerCells}</div>
       </div>
       <div style="flex:1;overflow:hidden;">${hourRows}</div>
-      <div style="display:flex;gap:4px;align-items:center;margin-top:6px;flex-shrink:0;">
-        <span style="font-size:10px;color:var(--muted);">少</span>
-        ${['var(--bg3)', '#0e4429', '#006d32', '#26a641', '#39d353'].map(c =>
-          `<div style="width:8px;height:8px;background:${c};border-radius:2px;"></div>`).join('')}
-        <span style="font-size:10px;color:var(--muted);">多</span>
-      </div>
     </div>`
 }
 
-// ── 低效 Session 列表 ──
+// ── Session 明细 ──
 function renderOutliers(el, rows) {
   function fmtDate(ms) {
-    if (!ms) return '—'
+    if (!ms) return ''
     return new Date(ms).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
   }
 
-  function truncate(text, maxLen = 48) {
-    if (!text) return '—'
-    return text.length > maxLen ? text.slice(0, maxLen) + '…' : text
-  }
-
-  renderPaged(el, rows, PAGE_SIZE_OUTLIERS, r => `
-    <div style="background:var(--bg3);border-radius:4px;padding:8px 10px;
-      margin-bottom:6px;border-left:3px solid ${topicColor(r.topic)};">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:12px;color:${topicColor(r.topic)};">${r.topic ?? '未分类'}</span>
-        <span style="font-size:12px;color:var(--red);font-weight:bold;">${r.messageCount} 轮 · ${fmtDate(r.startTime)}</span>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px;
-        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-        ${truncate(r.firstUserMsg)}
-      </div>
-    </div>`,
-    '暂无异常 Session（对话轮数均在正常范围内）')
+  renderPaged(el, rows, PAGE_SIZE_OUTLIERS, r => {
+    const msg     = r.firstUserMsg ?? '—'
+    const preview = msg.length > 40 ? msg.slice(0, 40) + '…' : msg
+    return `
+      <div style="background:var(--bg3);border-radius:4px;padding:7px 10px;
+        margin-bottom:5px;border-left:3px solid ${topicColor(r.topic)};">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;color:${topicColor(r.topic)};">${r.topic ?? '未分类'}</span>
+          <span style="font-size:11px;color:var(--muted);">${r.messageCount} 轮 · ${fmtDate(r.startTime)}</span>
+        </div>
+        <div title="${msg.replace(/"/g, '&quot;')}"
+          style="font-size:11px;color:var(--muted);margin-top:3px;cursor:default;
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${preview}
+        </div>
+      </div>`
+  }, '暂无高轮次 Session')
 }
 
 // ── 项目分布 ──
@@ -328,7 +335,7 @@ function renderProjects(el, rows) {
     'var(--green)', 'var(--cyan)', 'var(--amber)', 'var(--purple)',
     'var(--red)', '#f97316', '#06b6d4', 'var(--muted)',
   ]
-  renderPaged(el, rows, PAGE_SIZE, (r, i) => {
+  renderPaged(el, rows, PAGE_SIZE, r => {
     const color = COLORS[rows.indexOf(r)] ?? 'var(--muted)'
     return `
       <div style="margin-bottom:10px;">
