@@ -173,15 +173,12 @@ export function buildTopToolsHtml(tools, range, page = 0) {
 }
 
 // ── 从未使用列表 ──
-export function buildUnusedToolsHtml(tools, page = 0) {
+export function buildUnusedToolsHtml(tools) {
   // 当前时间范围内未使用的工具
   const unused = tools.filter(t => (t.useCount ?? 0) === 0)
   if (unused.length === 0) return null
 
-  const totalPages = Math.ceil(unused.length / LIST_PAGE_SIZE)
-  const paged = unused.slice(page * LIST_PAGE_SIZE, (page + 1) * LIST_PAGE_SIZE)
-
-  const rows = paged.map(t => {
+  const rows = unused.map(t => {
     const days = daysSince(t.installedAt)
     const color = TYPE_COLOR[t.type] ?? 'var(--green)'
     return `
@@ -196,11 +193,8 @@ export function buildUnusedToolsHtml(tools, page = 0) {
 
   return `
     <div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div class="section-title" style="color:var(--red);">从未使用（${unused.length}）</div>
-        ${totalPages > 1 ? pageBtns(page, totalPages, 'unused-prev-btn', 'unused-next-btn') : ''}
-      </div>
-      <div>${rows}</div>
+      <div class="section-title" style="color:var(--red);margin-bottom:8px;">从未使用（${unused.length}）</div>
+      <div style="overflow-y:auto;max-height:200px;">${rows}</div>
     </div>`
 }
 
@@ -216,17 +210,9 @@ function renderTopTools(el, tools, range) {
 }
 
 function renderUnusedTools(el, tools) {
-  const unusedCount = tools.filter(t => (t.useCount ?? 0) === 0).length
-  const max = Math.ceil(unusedCount / LIST_PAGE_SIZE) - 1
-  _state.unusedPage = Math.min(_state.unusedPage, Math.max(max, 0))
-  function render() {
-    const html = buildUnusedToolsHtml(tools, _state.unusedPage)
-    el.innerHTML = html ?? ''
-    el.style.display = html ? '' : 'none'
-    el.querySelector('.unused-prev-btn')?.addEventListener('click', () => { _state.unusedPage--; render(); el.scrollTop = 0 })
-    el.querySelector('.unused-next-btn')?.addEventListener('click', () => { _state.unusedPage++; render(); el.scrollTop = 0 })
-  }
-  render()
+  const html = buildUnusedToolsHtml(tools)
+  el.innerHTML = html ?? ''
+  el.style.display = html ? '' : 'none'
 }
 
 // ── 工具完整列表（右侧面板）──
