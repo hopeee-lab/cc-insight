@@ -48,10 +48,13 @@ function projectName(p) {
 
 function summaryCards(data) {
   const { roundsByTopic, durationByTopic, densityByTopic, projectDist } = data
-  const inefficient = roundsByTopic[0]
-  const topDuration = durationByTopic[0]
-  const topDensity  = densityByTopic[0]
-  const topProject  = projectDist[0]
+  const topDensity = densityByTopic[0]
+  const topProject = projectDist[0]
+
+  // 合并：最低效话题（轮数最多）+ 时间占比
+  const inefficient  = roundsByTopic[0]
+  const durationMap  = Object.fromEntries((durationByTopic ?? []).map(r => [r.topic, r.pct]))
+  const ineffPct     = inefficient ? (durationMap[inefficient.topic] ?? null) : null
 
   function card(label, value, sub, color) {
     return `
@@ -64,16 +67,16 @@ function summaryCards(data) {
       </div>`
   }
 
+  const ineffSub = inefficient
+    ? `平均 ${inefficient.avgRounds} 轮${ineffPct !== null ? ` · 时长占 ${ineffPct}%` : ''}`
+    : '暂无数据'
+
   return `
     <div class="grid-4" style="margin-bottom:14px;">
       ${card('最低效话题',
         inefficient ? inefficient.topic : '—',
-        inefficient ? `平均 ${inefficient.avgRounds} 轮对话` : '暂无数据',
+        ineffSub,
         'var(--red)')}
-      ${card('时间投入最多',
-        topDuration ? topDuration.topic : '—',
-        topDuration ? `占总时长 ${topDuration.pct}%` : '暂无数据',
-        'var(--amber)')}
       ${card('工具密度高',
         topDensity ? topDensity.topic : '—',
         topDensity ? `${topDensity.density} 次/轮` : '暂无数据',
@@ -143,16 +146,12 @@ export async function renderInsightsPage(container, range) {
       ${summaryCards(data)}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">Prompt 效率 — 平均对话轮数</span></div>
+          <div class="section-header"><span class="section-title">低效话题 — 轮数 & 时长占比</span></div>
           <div id="ins-rounds" style="${contentStyle}"></div>
         </div>
         <div class="card" style="${cardStyle}">
           <div class="section-header"><span class="section-title">自动化程度 — 工具调用密度</span></div>
           <div id="ins-density" style="${contentStyle}"></div>
-        </div>
-        <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">时间投入 — 话题时长占比</span></div>
-          <div id="ins-duration" style="${contentStyle}"></div>
         </div>
         <div class="card" style="${cardStyle}">
           <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
@@ -162,7 +161,7 @@ export async function renderInsightsPage(container, range) {
           <div class="section-header"><span class="section-title">低效 Session 列表</span></div>
           <div id="ins-outliers" style="${contentStyle}"></div>
         </div>
-        <div class="card" style="${cardStyle}">
+        <div class="card" style="grid-column:1/-1;${cardStyle}">
           <div class="section-header"><span class="section-title">项目分布</span></div>
           <div id="ins-projects" style="${contentStyle}"></div>
         </div>
@@ -173,9 +172,8 @@ export async function renderInsightsPage(container, range) {
     btn.addEventListener('click', () => setRange(btn.dataset.range))
   })
 
-  renderRounds(document.getElementById('ins-rounds'), data.roundsByTopic)
+  renderRounds(document.getElementById('ins-rounds'), data.roundsByTopic, data.durationByTopic)
   renderDensity(document.getElementById('ins-density'), data.densityByTopic)
-  renderDuration(document.getElementById('ins-duration'), data.durationByTopic)
   renderHeatmap(document.getElementById('ins-heatmap'), data.heatmap)
   renderOutliers(document.getElementById('ins-outliers'), data.outlierSessions)
   renderProjects(document.getElementById('ins-projects'), data.projectDist)
@@ -202,21 +200,20 @@ function barItem(topic, label, pct) {
     </div>`
 }
 
-function renderRounds(el, rows) {
+function renderRounds(el, rows, durationRows) {
   const max = Math.max(...(rows ?? []).map(r => r.avgRounds), 1)
-  renderPaged(el, rows, PAGE_SIZE,
-    r => barItem(r.topic, `${r.avgRounds} 轮`, r.avgRounds / max * 100))
+  const pctMap = Object.fromEntries((durationRows ?? []).map(r => [r.topic, r.pct]))
+  renderPaged(el, rows, PAGE_SIZE, r => {
+    const pct = pctMap[r.topic] ?? null
+    const label = pct !== null ? `${r.avgRounds} 轮 · ${pct}%` : `${r.avgRounds} 轮`
+    return barItem(r.topic, label, r.avgRounds / max * 100)
+  })
 }
 
 function renderDensity(el, rows) {
   const max = Math.max(...(rows ?? []).map(r => r.density), 1)
   renderPaged(el, rows, PAGE_SIZE,
     r => barItem(r.topic, `${r.density} 次/轮`, r.density / max * 100))
-}
-
-function renderDuration(el, rows) {
-  renderPaged(el, rows, PAGE_SIZE,
-    r => barItem(r.topic, `${r.pct}%`, r.pct))
 }
 
 // ── 时间规律热力图（flex 自适应宽度）──
