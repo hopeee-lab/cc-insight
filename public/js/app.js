@@ -55,6 +55,7 @@ function renderView(view) {
   if (isTabSwitch && view === 'skills') resetSkillsState()
   currentView = view
   const content = document.getElementById('content')
+  if (isTabSwitch) content.scrollTop = 0
 
   document.querySelectorAll('#tab-group .tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === view)
