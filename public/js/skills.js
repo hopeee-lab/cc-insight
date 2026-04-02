@@ -129,7 +129,7 @@ function pageBtns(page, totalPages, prevClass, nextClass) {
 }
 
 // ── 最常用标签云 ──
-export function buildTopToolsHtml(tools, range, page = 0) {
+export function buildTopToolsHtml(tools, range) {
   const rangeLabel = { '7d': '7 天', '30d': '30 天', '90d': '90 天', all: '全部时间' }
   const used = tools
     .filter(t => (t.useCount ?? 0) > 0)
@@ -143,10 +143,7 @@ export function buildTopToolsHtml(tools, range, page = 0) {
       </div>`
   }
 
-  const totalPages = Math.ceil(used.length / LIST_PAGE_SIZE)
-  const paged = used.slice(page * LIST_PAGE_SIZE, (page + 1) * LIST_PAGE_SIZE)
-
-  const rows = paged.map(t => {
+  const rows = used.map(t => {
     const color = TYPE_COLOR[t.type] ?? 'var(--green)'
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;
@@ -164,11 +161,8 @@ export function buildTopToolsHtml(tools, range, page = 0) {
 
   return `
     <div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div class="section-title">${range === 'all' ? '全部时间' : `近 ${rangeLabel[range]}`} 最常用</div>
-        ${totalPages > 1 ? pageBtns(page, totalPages, 'top-prev-btn', 'top-next-btn') : ''}
-      </div>
-      <div>${rows}</div>
+      <div class="section-title" style="margin-bottom:8px;">${range === 'all' ? '全部时间' : `近 ${rangeLabel[range]}`} 最常用</div>
+      <div style="overflow-y:auto;max-height:200px;">${rows}</div>
     </div>`
 }
 
@@ -199,14 +193,7 @@ export function buildUnusedToolsHtml(tools) {
 }
 
 function renderTopTools(el, tools, range) {
-  const max = Math.ceil(tools.filter(t => (t.allTimeUseCount ?? 0) > 0).length / LIST_PAGE_SIZE) - 1
-  _state.topPage = Math.min(_state.topPage, Math.max(max, 0))
-  function render() {
-    el.innerHTML = buildTopToolsHtml(tools, range, _state.topPage)
-    el.querySelector('.top-prev-btn')?.addEventListener('click', () => { _state.topPage--; render(); el.scrollTop = 0 })
-    el.querySelector('.top-next-btn')?.addEventListener('click', () => { _state.topPage++; render(); el.scrollTop = 0 })
-  }
-  render()
+  el.innerHTML = buildTopToolsHtml(tools, range)
 }
 
 function renderUnusedTools(el, tools) {

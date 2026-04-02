@@ -155,14 +155,17 @@ function renderHeatmap(el, data) {
       <div style="display:flex;flex-direction:column;gap:${GAP}px;width:${LABEL_W}px;flex-shrink:0;padding-top:2px;">
         ${dayLabels.map(l => `<div style="height:${CELL}px;font-size:10px;color:var(--muted);line-height:${CELL}px;">${l}</div>`).join('')}
       </div>
-      <div id="heatmap-scroll" style="overflow-x:auto;flex:1;">
-        <div style="display:flex;gap:${GAP}px;width:max-content;">
+      <div id="heatmap-scroll" style="overflow-x:auto;flex:1;
+        scrollbar-width:thin;scrollbar-color:var(--bg3) transparent;">
+        <style>#heatmap-scroll::-webkit-scrollbar{height:3px}
+          #heatmap-scroll::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}</style>
+        <div style="display:flex;gap:${GAP}px;min-width:100%;">
           ${weeks.map(week => `
-            <div style="display:flex;flex-direction:column;gap:${GAP}px;">
+            <div style="display:flex;flex-direction:column;gap:${GAP}px;flex:1;min-width:${CELL}px;">
               ${week.map(cell => `
                 <div title="${cell.day}: ${cell.count} sessions"
-                  style="width:${CELL}px;height:${CELL}px;border-radius:2px;
-                    background:${intensity(cell.count)};cursor:default;flex-shrink:0;">
+                  style="width:100%;aspect-ratio:1;border-radius:2px;
+                    background:${intensity(cell.count)};cursor:default;">
                 </div>`).join('')}
             </div>`).join('')}
         </div>
