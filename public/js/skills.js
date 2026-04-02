@@ -1,8 +1,11 @@
 // public/js/skills.js
 import { setRange } from './app.js'
 
-// 跨 renderSkills 调用保持翻页位置
+// 跨 renderSkills 调用保持翻页位置（切换 tab 时由 app.js 重置）
 const _state = { topPage: 0, unusedPage: 0, listPage: 0, listFilter: 'all' }
+export function resetSkillsState() {
+  _state.topPage = 0; _state.unusedPage = 0; _state.listPage = 0; _state.listFilter = 'all'
+}
 
 function rangeFilter(current) {
   const ranges = [

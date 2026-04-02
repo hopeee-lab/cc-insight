@@ -1,7 +1,7 @@
 // public/js/app.js
 import { initTheme } from './theme.js'
 import { renderOverview } from './overview.js'
-import { renderSkills } from './skills.js'
+import { renderSkills, resetSkillsState } from './skills.js'
 import { renderMcp } from './mcp.js'
 import { renderInsightsPage } from './insights.js'
 import { openPosterModal } from './poster.js'
@@ -51,6 +51,8 @@ function connectWS() {
 
 // ── 路由 ──
 function renderView(view) {
+  const isTabSwitch = view !== currentView
+  if (isTabSwitch && view === 'skills') resetSkillsState()
   currentView = view
   const content = document.getElementById('content')
 
