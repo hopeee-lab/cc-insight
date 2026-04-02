@@ -212,7 +212,7 @@ function renderRounds(el, rows, durationRows) {
 function renderDensity(el, rows) {
   const max = Math.max(...(rows ?? []).map(r => r.density), 1)
   renderScrollable(el, rows,
-    r => barItem(r.topic, `${r.avgTurns} assistant 轮次 · ${r.avgTools} 次工具调用`, r.density / max * 100))
+    r => barItem(r.topic, `${r.avgTurns} 轮次 · ${r.avgTools} 次工具调用`, r.density / max * 100))
 }
 
 // ── 时间规律热力图（话题 Y 轴 × 小时 X 轴）──
