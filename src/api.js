@@ -132,33 +132,35 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
     const statsMap = Object.fromEntries(usageStats.map(s => [s.toolName, s]))
     const allTimeMap = Object.fromEntries(allTimeStats.map(s => [s.toolName, s]))
     const claudeDir = getClaudeDir()
-    const result = tools.map(t => {
-      // 推算本地路径
-      let localPath = null
-      if (t.type === 'skill' || t.type === 'agent') {
-        localPath = path.join(claudeDir, 'skills', t.name)
-      } else if (t.type === 'plugin') {
-        // id 格式: plugin:{marketplace}:{pluginName}
-        const parts = t.id.split(':')
-        if (parts.length >= 3) {
-          localPath = path.join(claudeDir, 'plugins', 'cache', parts[1], parts[2])
+    const result = tools
+      .filter(t => after === 0 || (t.installed_at ?? 0) >= after)
+      .map(t => {
+        // 推算本地路径
+        let localPath = null
+        if (t.type === 'skill' || t.type === 'agent') {
+          localPath = path.join(claudeDir, 'skills', t.name)
+        } else if (t.type === 'plugin') {
+          // id 格式: plugin:{marketplace}:{pluginName}
+          const parts = t.id.split(':')
+          if (parts.length >= 3) {
+            localPath = path.join(claudeDir, 'plugins', 'cache', parts[1], parts[2])
+          }
         }
-      }
-      return {
-        ...t,
-        // camelCase 别名（DB 返回 snake_case，前端统一用 camelCase）
-        sourceType:         t.source_type,
-        sourceUrl:          t.source_url,
-        installedAt:        t.installed_at,
-        updatedAt:          t.updated_at,
-        securityScanResult: t.security_scan_result,
-        localPath,
-        // 使用统计（来自 tool_invocations 聚合）
-        useCount:         statsMap[t.name]?.useCount   ?? 0,
-        lastUsedAt:       statsMap[t.name]?.lastUsedAt ?? null,
-        allTimeUseCount:  allTimeMap[t.name]?.useCount  ?? 0,
-      }
-    })
+        return {
+          ...t,
+          // camelCase 别名（DB 返回 snake_case，前端统一用 camelCase）
+          sourceType:         t.source_type,
+          sourceUrl:          t.source_url,
+          installedAt:        t.installed_at,
+          updatedAt:          t.updated_at,
+          securityScanResult: t.security_scan_result,
+          localPath,
+          // 使用统计（来自 tool_invocations 聚合）
+          useCount:         statsMap[t.name]?.useCount   ?? 0,
+          lastUsedAt:       statsMap[t.name]?.lastUsedAt ?? null,
+          allTimeUseCount:  allTimeMap[t.name]?.useCount  ?? 0,
+        }
+      })
     res.json(result)
   })
 

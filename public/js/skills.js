@@ -174,8 +174,8 @@ export function buildTopToolsHtml(tools, range, page = 0) {
 
 // ── 从未使用列表 ──
 export function buildUnusedToolsHtml(tools, page = 0) {
-  // 只统计从未使用过的（全时段），闲置工具不算在内
-  const unused = tools.filter(t => (t.allTimeUseCount ?? 0) === 0)
+  // 当前时间范围内未使用的工具
+  const unused = tools.filter(t => (t.useCount ?? 0) === 0)
   if (unused.length === 0) return null
 
   const totalPages = Math.ceil(unused.length / LIST_PAGE_SIZE)
@@ -216,7 +216,7 @@ function renderTopTools(el, tools, range) {
 }
 
 function renderUnusedTools(el, tools) {
-  const unusedCount = tools.filter(t => (t.allTimeUseCount ?? 0) === 0).length
+  const unusedCount = tools.filter(t => (t.useCount ?? 0) === 0).length
   const max = Math.ceil(unusedCount / LIST_PAGE_SIZE) - 1
   _state.unusedPage = Math.min(_state.unusedPage, Math.max(max, 0))
   function render() {
