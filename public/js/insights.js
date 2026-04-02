@@ -215,7 +215,7 @@ function renderDensity(el, rows) {
     r => barItem(r.topic, `${r.density} 次/轮`, r.density / max * 100))
 }
 
-// ── 时间规律热力图（话题色 + 竖排标签）──
+// ── 时间规律热力图（话题 Y 轴 × 小时 X 轴）──
 function renderHeatmap(el, rows) {
   if (!rows || rows.length === 0) {
     el.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;">暂无数据</div>`
@@ -224,47 +224,50 @@ function renderHeatmap(el, rows) {
 
   const topics   = [...new Set(rows.map(r => r.topic))].slice(0, 8)
   const hours    = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+                     .filter((_, i) => i % 2 === 0)   // 00 02 04 … 22，共 12 列
   const lookup   = {}
   for (const r of rows) {
-    if (!lookup[r.hour]) lookup[r.hour] = {}
-    lookup[r.hour][r.topic] = r.count
+    if (!lookup[r.topic]) lookup[r.topic] = {}
+    lookup[r.topic][r.hour] = r.count
   }
   const maxCount = Math.max(...rows.map(r => r.count), 1)
 
-  const LABEL_W = '22px'
+  const LABEL_W = '72px'
   const GAP     = '3px'
+  const ROW_H   = '18px'
 
-  // 竖排话题标签（writing-mode:vertical-rl 中文从上到下，不需要 rotate）
-  const headerCells = topics.map(t => `
-    <div style="flex:1;display:flex;justify-content:center;">
-      <span style="font-size:10px;color:${topicColor(t)};
-        writing-mode:vertical-rl;
-        overflow:hidden;max-height:80px;letter-spacing:1px;">${t}</span>
+  // X 轴小时标签行
+  const hourHeader = `
+    <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:4px;">
+      <span style="width:${LABEL_W};flex-shrink:0;"></span>
+      <div style="display:flex;flex:1;gap:${GAP};">
+        ${hours.map(h => `
+          <div style="flex:1;text-align:center;font-size:9px;color:var(--muted);">${h}</div>
+        `).join('')}
+      </div>
     </div>`
-  ).join('')
 
-  const hourRows = hours.filter((_, i) => i % 2 === 0).map(h => {
-    const cells = topics.map(t => {
-      const cnt = lookup[h]?.[t] ?? 0
+  // 每个话题一行
+  const topicRows = topics.map(t => {
+    const cells = hours.map(h => {
+      const cnt = lookup[t]?.[h] ?? 0
       return `<div title="${h}:00 · ${t} · ${cnt} sessions"
-        style="flex:1;height:10px;border-radius:2px;
+        style="flex:1;height:${ROW_H};border-radius:3px;
           background:${topicCellColor(t, cnt, maxCount)};"></div>`
     }).join('')
     return `
-      <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:2px;">
-        <span style="font-size:9px;color:var(--muted);width:${LABEL_W};
-          text-align:right;flex-shrink:0;">${h}</span>
+      <div style="display:flex;align-items:center;gap:${GAP};margin-bottom:${GAP};">
+        <span style="width:${LABEL_W};flex-shrink:0;font-size:10px;color:${topicColor(t)};
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;
+          padding-right:6px;">${t}</span>
         <div style="display:flex;flex:1;gap:${GAP};">${cells}</div>
       </div>`
   }).join('')
 
   el.innerHTML = `
-    <div style="display:flex;flex-direction:column;height:100%;">
-      <div style="display:flex;align-items:flex-end;gap:${GAP};margin-bottom:4px;min-height:60px;">
-        <span style="width:${LABEL_W};flex-shrink:0;"></span>
-        <div style="display:flex;flex:1;gap:${GAP};">${headerCells}</div>
-      </div>
-      <div style="flex:1;overflow:hidden;">${hourRows}</div>
+    <div style="display:flex;flex-direction:column;padding-top:4px;">
+      ${hourHeader}
+      ${topicRows}
     </div>`
 }
 
@@ -277,7 +280,7 @@ function renderOutliers(el, rows) {
 
   renderScrollable(el, rows, r => {
     const msg     = r.firstUserMsg ?? '—'
-    const preview = msg.length > 40 ? msg.slice(0, 40) + '…' : msg
+    const preview = msg.length > 80 ? msg.slice(0, 80) + '…' : msg
     return `
       <div style="background:var(--bg3);border-radius:4px;padding:7px 10px;
         margin-bottom:5px;border-left:3px solid ${topicColor(r.topic)};">
