@@ -109,7 +109,7 @@ function summaryCards(data) {
         topDensity ? `${topDensity.density} 次/轮` : '暂无数据',
         'var(--cyan)')}
       ${card('最活跃项目',
-        topProject ? projectName(topProject.project) : '—',
+        topProject ? (topProject.project.split('/').filter(Boolean).pop() ?? projectName(topProject.project)) : '—',
         topProject ? `占 ${topProject.pct}%` : '暂无数据',
         'var(--green)')}
     </div>`
@@ -224,7 +224,6 @@ function renderHeatmap(el, rows) {
 
   const topics   = [...new Set(rows.map(r => r.topic))].slice(0, 8)
   const hours    = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
-                     .filter((_, i) => i % 2 === 0)   // 00 02 04 … 22，共 12 列
   const lookup   = {}
   for (const r of rows) {
     if (!lookup[r.topic]) lookup[r.topic] = {}
