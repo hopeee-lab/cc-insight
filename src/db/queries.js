@@ -3,14 +3,14 @@ import { getDb } from './db.js'
 
 export function upsertSession({ id, source, startTime, endTime, durationSec,
                                  projectPath, messageCount, toolUseCount, jsonlFile,
-                                 topic = null, topicKeywords = null }) {
+                                 topic = null, topicKeywords = null, firstUserMsg = null }) {
   getDb().prepare(`
     INSERT OR REPLACE INTO sessions
       (id, source, start_time, end_time, duration_sec, project_path, message_count, tool_use_count, jsonl_file,
-       topic, topic_keywords)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       topic, topic_keywords, first_user_msg)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, source, startTime, endTime, durationSec, projectPath, messageCount, toolUseCount, jsonlFile,
-         topic, topicKeywords ? JSON.stringify(topicKeywords) : null)
+         topic, topicKeywords ? JSON.stringify(topicKeywords) : null, firstUserMsg ?? null)
 }
 
 export function upsertTool({ id, name, type, subtype, description, sourceType, sourceUrl,
@@ -260,7 +260,7 @@ export function getOutlierSessions({ after }) {
     )
     SELECT s.topic,
            s.message_count  as messageCount,
-           s.topic_keywords as topicKeywords,
+           s.first_user_msg as firstUserMsg,
            s.start_time     as startTime
     FROM sessions s, avg_mc
     WHERE s.start_time >= ?

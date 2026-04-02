@@ -20,6 +20,9 @@ export function getDb() {
   if (!existingCols.includes('topic_keywords')) {
     _db.exec('ALTER TABLE sessions ADD COLUMN topic_keywords TEXT')
   }
+  if (!existingCols.includes('first_user_msg')) {
+    _db.exec('ALTER TABLE sessions ADD COLUMN first_user_msg TEXT')
+  }
   return _db
 }
 

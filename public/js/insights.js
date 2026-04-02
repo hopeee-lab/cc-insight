@@ -302,12 +302,9 @@ function renderOutliers(el, rows) {
     return new Date(ms).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
   }
 
-  function keywords(raw) {
-    if (!raw) return '—'
-    try {
-      const kws = JSON.parse(raw)
-      return kws.slice(0, 4).join(' · ') || '—'
-    } catch { return '—' }
+  function truncate(text, maxLen = 48) {
+    if (!text) return '—'
+    return text.length > maxLen ? text.slice(0, maxLen) + '…' : text
   }
 
   renderPaged(el, rows, PAGE_SIZE_OUTLIERS, r => `
@@ -315,11 +312,11 @@ function renderOutliers(el, rows) {
       margin-bottom:6px;border-left:3px solid ${topicColor(r.topic)};">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span style="font-size:12px;color:${topicColor(r.topic)};">${r.topic ?? '未分类'}</span>
-        <span style="font-size:12px;color:var(--red);font-weight:bold;">${r.messageCount} 轮</span>
+        <span style="font-size:12px;color:var(--red);font-weight:bold;">${r.messageCount} 轮 · ${fmtDate(r.startTime)}</span>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:3px;
         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-        ${keywords(r.topicKeywords)} · ${fmtDate(r.startTime)}
+        ${truncate(r.firstUserMsg)}
       </div>
     </div>`,
     '暂无异常 Session（对话轮数均在正常范围内）')

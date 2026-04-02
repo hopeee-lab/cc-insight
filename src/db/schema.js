@@ -9,8 +9,9 @@ export const CREATE_TABLES = `
     message_count INTEGER DEFAULT 0,
     tool_use_count INTEGER DEFAULT 0,
     jsonl_file    TEXT,
-    topic         TEXT,
-    topic_keywords TEXT
+    topic              TEXT,
+    topic_keywords     TEXT,
+    first_user_msg     TEXT
   );
 
   CREATE TABLE IF NOT EXISTS tools (

@@ -109,6 +109,7 @@ export async function indexJsonlFile(filePath) {
     jsonlFile: filePath,
     topic,
     topicKeywords,
+    firstUserMsg: result.firstUserMessage ?? null,
   })
 
   if (result.invocations.length > 0) {
