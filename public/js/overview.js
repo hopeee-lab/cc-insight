@@ -51,8 +51,8 @@ function statsCards(data) {
     </div>`
 }
 
-export async function renderOverview(container, range) {
-  const savedScroll = container.querySelector('.split-right')?.scrollTop ?? 0
+export async function renderOverview(container, range, preserveScroll = true) {
+  const savedScroll = preserveScroll ? (container.querySelector('.split-right')?.scrollTop ?? 0) : 0
 
   const [overview, heatmap, dist, insights, toolDist] = await Promise.all([
     fetch(`/api/overview?range=${range}`).then(r => r.json()),

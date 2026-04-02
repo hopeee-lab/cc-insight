@@ -64,9 +64,9 @@ function buildOverviewCards(tools, usageMap) {
   </div>`
 }
 
-export async function renderSkills(container, range) {
-  // 保存滚动位置，避免 WS refresh 导致跳回顶部
-  const savedScroll = container.querySelector('.split-right')?.scrollTop ?? 0
+export async function renderSkills(container, range, preserveScroll = true) {
+  // 保存滚动位置，避免 WS refresh 导致跳回顶部（tab 切换时不恢复）
+  const savedScroll = preserveScroll ? (container.querySelector('.split-right')?.scrollTop ?? 0) : 0
 
   const tools = await fetch(`/api/tools?range=${range}`).then(r => r.json())
   const usageMap = Object.fromEntries(tools.map(t => [t.name, t]))

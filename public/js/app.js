@@ -61,9 +61,9 @@ function renderView(view) {
     btn.classList.toggle('active', btn.dataset.view === view)
   })
 
-  if (view === 'overview')  renderOverview(content, currentRange)
+  if (view === 'overview')  renderOverview(content, currentRange, !isTabSwitch)
   if (view === 'insights')  renderInsightsPage(content, currentRange)
-  if (view === 'skills')    renderSkills(content, currentRange)
+  if (view === 'skills')    renderSkills(content, currentRange, !isTabSwitch)
   if (view === 'mcp')       renderMcp(content)
 }
 
