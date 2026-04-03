@@ -4,7 +4,7 @@
   "description": "Local Claude Code usage dashboard — sessions, skills, efficiency, MCP servers, and shareable poster",
   "type": "module",
   "bin": {
-    "cc-insight": "./bin/cc-insight.js"
+    "cc-insight": "bin/cc-insight.js"
   },
   "files": [
     "bin",
