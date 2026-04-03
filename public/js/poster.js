@@ -443,7 +443,7 @@ function buildPosterCard(data) {
   if ((data.heatmap ?? []).length > 0) {
     const heatSection = el('div', {})
     heatSection.appendChild(sectionLabel('ACTIVITY'))
-    heatSection.appendChild(buildHeatmapSVG(data.heatmap))
+    heatSection.appendChild(buildHeatmapSVG(data.heatmap, data.range))
     chartsArea.appendChild(heatSection)
   }
 
@@ -473,40 +473,79 @@ function buildPosterCard(data) {
   return wrap
 }
 
-// ── SVG：Activity Heatmap（最近 N 天方块）────────────────────
+// ── SVG：Activity Heatmap（GitHub 贡献图风格，7行×N列）────────
 
-function buildHeatmapSVG(heatmap) {
-  const cellSize = 22; const gap = 3; const LABEL_H = 16
-  const MAX_CELLS = Math.floor((476 + gap) / (cellSize + gap))  // 最多填满 476px
-  const n = Math.min(heatmap.length || 7, MAX_CELLS)
-  heatmap = heatmap.slice(-n)  // 取最近 n 天
+function buildHeatmapSVG(heatmap, range) {
+  const CELL = 9; const GAP = 2; const LABEL_W = 22
+  const CHART_W = 476
+  const maxWeeks = Math.floor((CHART_W - LABEL_W + GAP) / (CELL + GAP))
+  const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', '']
+
+  if (!heatmap || heatmap.length === 0) return document.createElement('div')
+
+  const map = {}
+  for (const d of heatmap) map[d.day] = d.count
   const maxCount = Math.max(...heatmap.map(d => d.count), 1)
-  const svgW = n * (cellSize + gap) - gap
-  const svgH = cellSize + LABEL_H
 
-  const cells = heatmap.map((d, i) => {
-    const opacity = 0.1 + (d.count / maxCount) * 0.9
-    const x = i * (cellSize + gap)
-    return `<rect x="${x}" y="0" width="${cellSize}" height="${cellSize}"
-      rx="3" fill="rgba(74,222,128,${opacity.toFixed(2)})"/>`
-  }).join('')
-
-  // 第一个格子的星期标注
-  let dayLabel = ''
-  if (heatmap[0]?.day) {
-    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const d = new Date(heatmap[0].day + 'T12:00:00Z')
-    const cx = cellSize / 2
-    dayLabel = `<text x="${cx}" y="${svgH - 1}" text-anchor="middle"
-      font-size="10" fill="rgba(107,114,128,0.9)"
-      font-family="JetBrains Mono,monospace">${DAY_NAMES[d.getUTCDay()]}</text>`
+  function intensity(count) {
+    if (!count) return C.bg3
+    const p = count / maxCount
+    if (p < 0.25) return '#0e4429'
+    if (p < 0.5)  return '#006d32'
+    if (p < 0.75) return '#26a641'
+    return '#39d353'
   }
+
+  // 从最早数据对齐到周一，生成所有周
+  const today = new Date()
+  const firstDay = new Date(heatmap[0].day + 'T12:00:00Z')
+  const start = new Date(firstDay)
+  start.setDate(start.getDate() - ((start.getUTCDay() + 6) % 7))
+
+  const weeks = []
+  let cur = new Date(start)
+  while (cur <= today) {
+    const week = []
+    for (let d = 0; d < 7; d++) {
+      const key = cur.toISOString().slice(0, 10)
+      week.push({ day: key, count: map[key] ?? 0 })
+      cur.setDate(cur.getDate() + 1)
+    }
+    weeks.push(week)
+  }
+
+  // all 模式或超出 maxWeeks：只取最近一屏
+  const displayWeeks = weeks.slice(-maxWeeks)
+  const nWeeks = displayWeeks.length
+  const svgW = LABEL_W + nWeeks * (CELL + GAP) - GAP
+  const svgH = 7 * (CELL + GAP) - GAP
+
+  let content = ''
+
+  // Y 轴标签
+  DAY_LABELS.forEach((label, i) => {
+    if (!label) return
+    const y = i * (CELL + GAP) + CELL - 1
+    content += `<text x="${LABEL_W - 3}" y="${y}" text-anchor="end"
+      font-size="7" fill="${C.muted}"
+      font-family="JetBrains Mono,monospace">${label}</text>`
+  })
+
+  // 格子
+  displayWeeks.forEach((week, wi) => {
+    const x = LABEL_W + wi * (CELL + GAP)
+    week.forEach((cell, di) => {
+      const y = di * (CELL + GAP)
+      content += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}"
+        rx="2" fill="${intensity(cell.count)}"/>`
+    })
+  })
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.setAttribute('width', svgW)
   svg.setAttribute('height', svgH)
   svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`)
-  svg.innerHTML = cells + dayLabel
+  svg.innerHTML = content
   return svg
 }
 

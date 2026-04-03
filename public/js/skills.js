@@ -78,7 +78,6 @@ export async function renderSkills(container, range, preserveScroll = true) {
       <div class="split-left">
         <div id="top-tools-panel"></div>
         <div id="unused-tools-panel"></div>
-        <div id="recommendations-panel"></div>
       </div>
       <div class="split-right" id="tools-list-panel"></div>
     </div>
@@ -89,10 +88,10 @@ export async function renderSkills(container, range, preserveScroll = true) {
   })
 
   renderTopTools(document.getElementById('top-tools-panel'), tools, range)
-  renderUnusedTools(document.getElementById('unused-tools-panel'), tools)
+  renderUnusedTools(document.getElementById('unused-tools-panel'), tools,
+    () => renderSkills(container, range))
   renderToolsList(document.getElementById('tools-list-panel'), tools, range,
     () => renderSkills(container, range))
-  renderRecommendations(document.getElementById('recommendations-panel'), tools, container, range)
 
   // 恢复滚动位置
   if (savedScroll > 0) {
@@ -189,7 +188,13 @@ export function buildUnusedToolsHtml(tools) {
 
   return `
     <div class="card" style="margin-bottom:10px;">
-      <div class="section-title" style="color:var(--red);margin-bottom:8px;">从未使用（${unused.length}）</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="section-title" style="color:var(--red);">从未使用（${unused.length}）</div>
+        <button class="unused-clean-btn"
+          style="background:transparent;border:1px solid var(--red);color:var(--red);
+            border-radius:3px;padding:2px 8px;font-size:12px;cursor:pointer;
+            font-family:var(--font);">一键清理</button>
+      </div>
       <div style="overflow-y:auto;max-height:200px;">${rows}</div>
     </div>`
 }
@@ -198,10 +203,23 @@ function renderTopTools(el, tools, range) {
   el.innerHTML = buildTopToolsHtml(tools, range)
 }
 
-function renderUnusedTools(el, tools) {
+function renderUnusedTools(el, tools, onDeleted) {
   const html = buildUnusedToolsHtml(tools)
   el.innerHTML = html ?? ''
   el.style.display = html ? '' : 'none'
+
+  el.querySelector('.unused-clean-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget
+    const unused = tools.filter(t => (t.useCount ?? 0) === 0)
+    const confirmed = await showConfirm(`确认删除全部 ${unused.length} 个从未使用的工具？此操作不可撤销。`)
+    if (!confirmed) return
+    btn.textContent = '清理中…'
+    btn.disabled = true
+    for (const t of unused) {
+      await fetch(`/api/tools/${encodeURIComponent(t.name)}?type=${t.type}`, { method: 'DELETE' })
+    }
+    if (typeof onDeleted === 'function') onDeleted()
+  })
 }
 
 // ── 工具完整列表（右侧面板）──

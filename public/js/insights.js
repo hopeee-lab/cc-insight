@@ -67,7 +67,9 @@ function projectName(p) {
 function summaryCards(data) {
   const { roundsByTopic, durationByTopic, densityByTopic, projectDist, outlierSessions } = data
   const topDensity  = densityByTopic[0]
-  const topProject  = (projectDist ?? []).find(r => projectName(r.project) !== '~')
+  const projFiltered = (projectDist ?? []).filter(r => projectName(r.project) !== '~')
+  const projTotal    = projFiltered.reduce((s, r) => s + (r.count ?? 0), 0)
+  const topProject   = projFiltered[0]
   const topOutlier  = outlierSessions[0]
 
   const inefficient = roundsByTopic[0]
@@ -110,7 +112,7 @@ function summaryCards(data) {
         'var(--cyan)')}
       ${card('最活跃项目',
         topProject ? (topProject.project.split('/').filter(Boolean).pop() ?? projectName(topProject.project)) : '—',
-        topProject ? `占 ${topProject.pct}%` : '暂无数据',
+        topProject ? `占 ${projTotal > 0 ? Math.round(topProject.count / projTotal * 100) : 0}%` : '暂无数据',
         'var(--green)')}
     </div>`
 }
@@ -157,7 +159,7 @@ export async function renderInsightsPage(container, range) {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="card" style="${cardStyle}">
-          <div class="section-header" style="padding-left:72px;"><span class="section-title">时间规律 — 时段 × 话题</span></div>
+          <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
           <div id="ins-heatmap" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;"></div>
         </div>
         <div class="card" style="${cardStyle}">
@@ -231,7 +233,7 @@ function renderHeatmap(el, rows) {
   }
   const maxCount = Math.max(...rows.map(r => r.count), 1)
 
-  const LABEL_W = '72px'
+  const LABEL_W = '48px'
   const GAP     = '3px'
 
   // X 轴小时标签行（宽度与格子对齐）
@@ -276,7 +278,7 @@ function renderOutliers(el, rows) {
     return new Date(ms).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
   }
 
-  const filtered = (rows ?? []).filter(r => r.firstUserMsg && r.firstUserMsg.trim())
+  const filtered = (rows ?? []).filter(r => r.firstUserMsg && r.firstUserMsg.trim()).slice(0, 10)
   renderScrollable(el, filtered, r => {
     const msg     = r.firstUserMsg
     const preview = msg.length > 70 ? msg.slice(0, 70) + '…' : msg
@@ -303,17 +305,19 @@ function renderProjects(el, rows) {
     'var(--red)', '#f97316', '#06b6d4', 'var(--muted)',
   ]
   const filtered = (rows ?? []).filter(r => projectName(r.project) !== '~')
+  const total = filtered.reduce((s, r) => s + (r.count ?? 0), 0)
   renderScrollable(el, filtered, r => {
     const color = COLORS[filtered.indexOf(r)] ?? 'var(--muted)'
+    const pct = total > 0 ? Math.round(r.count / total * 100) : 0
     return `
       <div style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
           <span style="color:var(--text);overflow:hidden;text-overflow:ellipsis;
             white-space:nowrap;max-width:60%;">${projectName(r.project)}</span>
-          <span style="color:${color};white-space:nowrap;">${r.count} 次 · ${r.pct}%</span>
+          <span style="color:${color};white-space:nowrap;">${r.count} 次 · ${pct}%</span>
         </div>
         <div style="background:var(--bg3);border-radius:3px;height:6px;">
-          <div style="width:${r.pct}%;background:${color};height:6px;border-radius:3px;
+          <div style="width:${pct}%;background:${color};height:6px;border-radius:3px;
                       transition:width 0.3s;min-width:4px;"></div>
         </div>
       </div>`
