@@ -3,7 +3,7 @@ import { setRange } from './app.js'
 
 const TOPIC_COLORS = {
   '调试修复':   'var(--green)',
-  '新功能开发': 'var(--cyan)',
+  '功能开发': 'var(--cyan)',
   '架构设计':   'var(--amber)',
   '代码重构':   'var(--purple)',
   '学习探索':   'var(--red)',
@@ -15,7 +15,7 @@ const TOPIC_COLORS = {
 // 热力图用 rgba，支持按强度调节透明度
 const TOPIC_HEX = {
   '调试修复':   '74,222,128',
-  '新功能开发': '34,211,238',
+  '功能开发': '34,211,238',
   '架构设计':   '245,158,11',
   '代码重构':   '167,139,250',
   '学习探索':   '248,113,113',
@@ -296,7 +296,7 @@ function renderOutliers(el, rows) {
           ${preview}
         </div>
       </div>`
-  }, '暂无高轮次 Session')
+  }, '暂无数据')
 }
 
 // ── 项目分布 ──

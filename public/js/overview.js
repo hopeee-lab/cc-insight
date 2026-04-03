@@ -252,7 +252,11 @@ function renderDist(el, data) {
     col.addEventListener('mouseenter', () => { tip.textContent = col.dataset.label; tip.style.opacity = '1' })
     col.addEventListener('mouseleave', () => { tip.style.opacity = '0' })
     col.addEventListener('mousemove', e => {
-      tip.style.left = (e.clientX + 12) + 'px'
+      const tipW = tip.offsetWidth || 120
+      const left = e.clientX + 12 + tipW > window.innerWidth
+        ? e.clientX - tipW - 8
+        : e.clientX + 12
+      tip.style.left = left + 'px'
       tip.style.top  = (e.clientY - 24) + 'px'
     })
   })
@@ -359,20 +363,28 @@ function renderToolDist(el, data) {
 
   // SVG 环形图
   const R = 54, r = 32, cx = 70, cy = 70
-  let angle = -Math.PI / 2
-  const paths = items.map((item, i) => {
-    const pct = item.count / total
-    const sweep = pct * 2 * Math.PI
-    const x1 = cx + R * Math.cos(angle), y1 = cy + R * Math.sin(angle)
-    const x2 = cx + R * Math.cos(angle + sweep), y2 = cy + R * Math.sin(angle + sweep)
-    const ix1 = cx + r * Math.cos(angle), iy1 = cy + r * Math.sin(angle)
-    const ix2 = cx + r * Math.cos(angle + sweep), iy2 = cy + r * Math.sin(angle + sweep)
-    const large = sweep > Math.PI ? 1 : 0
-    const color = i < COLORS.length ? COLORS[i] : 'var(--muted)'
-    const d = `M${x1},${y1} A${R},${R},0,${large},1,${x2},${y2} L${ix2},${iy2} A${r},${r},0,${large},0,${ix1},${iy1} Z`
-    angle += sweep
-    return `<path d="${d}" fill="${color}" opacity="0.9"/>`
-  }).join('')
+  let paths
+  if (items.length === 1) {
+    // 单项无法用 arc path 画完整圆，用两个同心圆代替
+    const color = COLORS[0]
+    paths = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${color}" opacity="0.9"/>
+             <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg1)"/>`
+  } else {
+    let angle = -Math.PI / 2
+    paths = items.map((item, i) => {
+      const pct = item.count / total
+      const sweep = pct * 2 * Math.PI
+      const x1 = cx + R * Math.cos(angle), y1 = cy + R * Math.sin(angle)
+      const x2 = cx + R * Math.cos(angle + sweep), y2 = cy + R * Math.sin(angle + sweep)
+      const ix1 = cx + r * Math.cos(angle), iy1 = cy + r * Math.sin(angle)
+      const ix2 = cx + r * Math.cos(angle + sweep), iy2 = cy + r * Math.sin(angle + sweep)
+      const large = sweep > Math.PI ? 1 : 0
+      const color = i < COLORS.length ? COLORS[i] : 'var(--muted)'
+      const d = `M${x1},${y1} A${R},${R},0,${large},1,${x2},${y2} L${ix2},${iy2} A${r},${r},0,${large},0,${ix1},${iy1} Z`
+      angle += sweep
+      return `<path d="${d}" fill="${color}" opacity="0.9"/>`
+    }).join('')
+  }
 
   const totalFmt = total >= 10000 ? (total / 10000).toFixed(1) + 'w次' : total.toLocaleString() + '次'
 

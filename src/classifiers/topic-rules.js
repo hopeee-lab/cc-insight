@@ -8,7 +8,7 @@ export const TOPIC_RULES = [
       'traceback', 'stacktrace', '调试', 'debug', 'broken', 'not working'],
   },
   {
-    topic: '新功能开发',
+    topic: '功能开发',
     keywords: ['新增', 'implement', 'feature', '功能', ' add ', 'build', '做一个', '开发',
       '实现', '支持', '创建', 'create', '添加', '增加', 'develop', 'new feature'],
   },
