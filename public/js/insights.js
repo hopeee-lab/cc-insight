@@ -252,7 +252,7 @@ function renderHeatmap(el, rows) {
     const cells = hours.map(h => {
       const cnt = lookup[t]?.[h] ?? 0
       return `<div title="${h}:00 · ${t} · ${cnt} sessions"
-        style="flex:1;aspect-ratio:1;border-radius:2px;
+        style="flex:1;aspect-ratio:1;border-radius:2px;max-width:14px;
           background:${topicCellColor(t, cnt, maxCount)};"></div>`
     }).join('')
     return `
@@ -279,6 +279,7 @@ function renderOutliers(el, rows) {
   }
 
   const filtered = (rows ?? []).filter(r => r.firstUserMsg && r.firstUserMsg.trim()).slice(0, 10)
+  // SQL 返回 50 条保证过滤后有足够数量，slice(0,10) 取前 10
   renderScrollable(el, filtered, r => {
     const msg     = r.firstUserMsg
     const preview = msg.length > 70 ? msg.slice(0, 70) + '…' : msg

@@ -87,6 +87,8 @@ function summaryCards(servers) {
 }
 
 export async function renderMcp(container) {
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
   container.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px;">加载中…</div>`
 
   let servers
