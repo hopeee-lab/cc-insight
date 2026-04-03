@@ -1,113 +1,173 @@
 # CC Insight
 
-> A local analytics dashboard for [Claude Code](https://claude.ai/code) — understand how you actually use AI.
-
 [中文说明](README.zh.md)
 
----
+> 🔍 Do you really know how you use Claude Code?
 
-## Why
+CC Insight turns your local Claude Code usage into a visual dashboard:
+sessions, habits, tools, and unused skills — all in one place.
 
-You've been using Claude Code for months. But do you actually know how?
-
-**No visibility into your usage.** You can't see which tasks eat the most time, when you're most productive, or whether your AI habits are changing.
-
-**Skills pile up, unmanaged.** Installed tools accumulate with no way to know which ones you actually use, which have been idle for weeks, or which carry security risks.
-
-**`/insights` is a text report, not data.** It's the LLM's subjective take on your sessions — not quantified, not filterable, not comparable over time.
-
-**MCP Servers scattered across config files.** No single view of what's configured and what tools are actually available.
-
-CC Insight indexes your local session history and presents it as an interactive dashboard — no cloud, no account, no data leaving your machine.
-
-> "You think you're exploring. The data says 60% of your time is debugging."
+🔒 **100% local. Your data never leaves your machine.**
 
 ---
 
-## vs `/insights`
+## ⚡ What you get in 5 seconds
 
-| | `/insights` | CC Insight |
-|---|---|---|
-| Output | Static HTML file | Interactive dashboard |
-| History | Current session only | All-time + time range filter |
-| Trends | — | Time patterns, topic trends, efficiency metrics |
-| Skills | — | Usage stats, idle detection, bulk cleanup |
-| MCP Servers | — | Configured servers + tool list |
+* 📊 When do you use Claude Code the most?
+* 🔥 Which tasks take the most time and effort?
+* 🧠 Are you a “daytime user” or a “night owl”?
+* 🧹 Which skills are unused and can be cleaned up?
 
 ---
 
-## Features
+## 🖼️ Preview
 
-**Overview** — Session count, duration, peak hours, GitHub-style activity heatmap, 24H distribution, and smart habit insights.
+Get an instant view of your AI usage patterns 👇
 
-**Efficiency** — Time-consuming topics, tool call density, high-round sessions, project distribution, and a time-of-day × topic heatmap.
+### Overview Dashboard
 
-**Skills** — Installed Skill / Agent / Plugin list with usage stats, idle detection, one-click bulk cleanup, and security scan.
+* Sessions / Duration / Peak usage time
+* GitHub-style activity heatmap
+* 24-hour usage distribution
+* Tool usage breakdown
 
-**MCP Servers** — Configured servers and their tools, parsed from `settings.json` and `claude_desktop_config.json`.
-
-<img width="2874" height="1548" alt="image" src="https://github.com/user-attachments/assets/b6a34467-13a3-4c5a-957a-263ec4d1dbe2" />
-
----
-
-## Requirements
-
-- Node.js ≥ 20 (LTS recommended: 20, 22, or 24)
-- Claude Code installed (`~/.claude/` directory must exist)
+![overview](https://github.com/user-attachments/assets/cdca4f24-8a4b-40f2-b004-0474422412f7)
 
 ---
 
-## Installation
+## 🧰 Requirements
 
-**npm (recommended)**
+Before using CC Insight, make sure you have:
 
-```bash
+* Node.js ≥ 20 (LTS recommended: 20 / 22 / 24)
+* Claude Code installed and used (`~/.claude/` directory exists)
+
+> On macOS, if installation fails:
+>
+> ```bash
+> xcode-select --install
+> ```
+
+---
+
+## 🤔 Why not `/insights`?
+
+|                  | `/insights`     | CC Insight                  |
+| ---------------- | --------------- | --------------------------- |
+| Output           | Static HTML     | Interactive dashboard       |
+| Scope            | Current session | Full history + time filters |
+| Trend analysis   | ❌               | ✅                           |
+| Skill management | ❌               | ✅                           |
+| Privacy          | Local           | Local                       |
+
+---
+
+## 🧠 Why not cloud tools?
+
+* ❌ Require uploading your data
+* ❌ Potential privacy risks
+
+👉 CC Insight:
+
+* ✅ Fully local
+* ✅ Your data stays on your machine
+* ✅ No signup required
+
+---
+
+## ⚡ Quick Start
+
+```bash id="7vkm08"
 npm install -g cc-insight
 cc-insight
 ```
 
-**From source**
+Open:
 
-```bash
-git clone https://github.com/hopeee-lab/cc-insight.git
-cd cc-insight
-npm install
-npm start
+http://127.0.0.1:3847
+
+That’s it.
+
+---
+
+## ✨ Features
+
+### 📊 Overview
+
+* Sessions, duration, peak usage time
+* GitHub-style heatmap
+* Smart usage insights
+
+### 📈 Insights
+
+* Most time-consuming tasks
+* Tool usage density
+* High-turn sessions
+* Project distribution
+
+### 🧰 Skill & Agent Management
+
+* Usage stats (with time filters)
+* Detect unused skills
+* One-click cleanup
+* Security scan for risky commands
+
+### 🔌 MCP Server
+
+* Auto-detect configuration
+* Display connected tools
+
+### 🖼️ Shareable Poster
+
+* Generate your AI usage profile
+* Export as an image
+
+---
+
+## 🔒 Privacy
+
+CC Insight only reads local data:
+
+* `~/.claude/projects/`
+* `~/.claude/skills/`
+* `~/.claude/settings.json`
+
+Data is stored locally at:
+
+```id="7hbubc"
+~/.cc-insight/data.db
 ```
 
-The dashboard opens automatically at `http://127.0.0.1:3847`.
-
-> macOS: if installation fails, install Xcode Command Line Tools first:
-> `xcode-select --install`
+👉 **No data is ever uploaded**
 
 ---
 
-## Usage
+## 🧑‍💻 Who is this for?
 
-| Action | How |
-|--------|-----|
-| Switch time range | 7d / 30d / 90d / All — top of each view |
-| Re-scan skills | Restart CC Insight (auto on every launch) |
-| Re-index sessions | "重新检测" on the empty state screen |
-| Bulk clean unused tools | "一键清理" in the Skills → Unused list |
+* Heavy Claude Code users
+* Indie hackers & AI builders
+* Anyone who wants to understand and optimize their AI workflow
 
 ---
 
-## Data & Privacy
+## ⭐ Support
 
-CC Insight reads only from `~/.claude/` and builds a local index at `~/.cc-insight/data.db`.
-It runs a local web server at `127.0.0.1:3847` — accessible from your machine only.
-**No data is ever sent anywhere.**
-
-| Data | Source |
-|------|--------|
-| Session history | `~/.claude/projects/**/*.jsonl` |
-| Skills & Agents | `~/.claude/skills/*/SKILL.md` |
-| Plugins | `~/.claude/plugins/cache/` |
-| MCP Servers | `~/.claude/settings.json`, `~/Library/Application Support/Claude/claude_desktop_config.json` |
+If you find this useful, consider giving it a star ⭐
+It really helps!
 
 ---
 
-## License
+## 💬 Contact
+
+If you have any ideas or feedback, feel free to reach out:
+
+* Twitter: [https://x.com/hopeee_lab](https://x.com/hopeee_lab)
+* Or open an Issue / PR
+
+Building more AI tools — follow along 🚀
+
+---
+
+## 📄 License
 
 MIT
