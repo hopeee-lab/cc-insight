@@ -23,11 +23,11 @@ CC Insight indexes your local session history and presents it as an interactive 
 
 | | `/insights` | CC Insight |
 |---|---|---|
-| Output | Text in terminal | Visual dashboard in browser |
+| Output | Static HTML file | Interactive dashboard |
 | History | Current session only | All-time + time range filter |
+| Trends | — | Time patterns, topic trends, efficiency metrics |
 | Skills | — | Usage stats, idle detection, bulk cleanup |
 | MCP Servers | — | Configured servers + tool list |
-| Shareable | — | Export as PNG poster |
 
 ---
 
@@ -83,7 +83,6 @@ The dashboard opens automatically at `http://127.0.0.1:3847`.
 | Re-scan skills | Restart CC Insight (auto on every launch) |
 | Re-index sessions | "重新检测" on the empty state screen |
 | Bulk clean unused tools | "一键清理" in the Skills → Unused list |
-| Generate poster | "生成海报" button in the top bar |
 
 ---
 
