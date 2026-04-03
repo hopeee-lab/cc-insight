@@ -224,20 +224,38 @@ function renderDist(el, data) {
     label.textContent = `峰值 ${peakList} · 静默 ${silent.length}h`
   }
 
+  el.style.position = 'relative'
   el.innerHTML = `
-    <div style="display:flex;gap:2px;align-items:flex-end;height:60px;">
+    <div class="dist-chart" style="display:flex;gap:2px;align-items:flex-end;height:60px;cursor:default;">
       ${hours.map(h => {
         const pct = Math.max(h.count / max * 100, h.count > 0 ? 4 : 1)
         const isPeak = peaks.has(h.hour) && max > 0
         const color = isPeak ? 'var(--amber)' : (h.count > 0 ? 'var(--green)' : 'var(--bg3)')
-        return `<div title="${h.hour}:00 — ${h.count} sessions"
-          style="flex:1;background:${color};border-radius:2px 2px 0 0;height:${pct}%;min-height:2px;"></div>`
+        return `<div class="dist-col" data-label="${h.hour}:00 — ${h.count} sessions"
+          style="flex:1;height:100%;display:flex;align-items:flex-end;">
+          <div style="width:100%;background:${color};border-radius:2px 2px 0 0;
+            height:${pct}%;min-height:2px;pointer-events:none;"></div>
+        </div>`
       }).join('')}
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:4px;">
       ${['0h','6h','12h','18h','23h'].map(l =>
         `<span style="font-size:11px;color:var(--muted);">${l}</span>`).join('')}
-    </div>`
+    </div>
+    <div id="dist-tip" style="position:fixed;pointer-events:none;opacity:0;
+      background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+      padding:3px 8px;font-size:11px;color:var(--text);white-space:nowrap;z-index:50;
+      transition:opacity 0.1s;"></div>`
+
+  const tip = el.querySelector('#dist-tip')
+  el.querySelectorAll('.dist-col').forEach(col => {
+    col.addEventListener('mouseenter', () => { tip.textContent = col.dataset.label; tip.style.opacity = '1' })
+    col.addEventListener('mouseleave', () => { tip.style.opacity = '0' })
+    col.addEventListener('mousemove', e => {
+      tip.style.left = (e.clientX + 12) + 'px'
+      tip.style.top  = (e.clientY - 24) + 'px'
+    })
+  })
 }
 
 // ── Insights ──

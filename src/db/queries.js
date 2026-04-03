@@ -269,6 +269,8 @@ export function getOutlierSessions({ after }) {
       AND avg_mc.v > 0
       AND s.message_count > avg_mc.v * 2
       AND s.topic IS NOT NULL
+      AND s.first_user_msg IS NOT NULL
+      AND s.first_user_msg != ''
     ORDER BY s.message_count DESC
     LIMIT 50
   `).all(after, after)

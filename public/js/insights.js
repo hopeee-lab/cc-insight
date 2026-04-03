@@ -252,7 +252,7 @@ function renderHeatmap(el, rows) {
     const cells = hours.map(h => {
       const cnt = lookup[t]?.[h] ?? 0
       return `<div title="${h}:00 · ${t} · ${cnt} sessions"
-        style="flex:1;aspect-ratio:1;border-radius:2px;max-width:14px;
+        style="flex:1;aspect-ratio:1;border-radius:2px;
           background:${topicCellColor(t, cnt, maxCount)};"></div>`
     }).join('')
     return `
