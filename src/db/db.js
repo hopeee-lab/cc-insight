@@ -23,6 +23,8 @@ export function getDb() {
   if (!existingCols.includes('first_user_msg')) {
     _db.exec('ALTER TABLE sessions ADD COLUMN first_user_msg TEXT')
   }
+  // 迁移：话题名重命名
+  _db.exec(`UPDATE sessions SET topic = '功能开发' WHERE topic = '新功能开发'`)
   return _db
 }
 
