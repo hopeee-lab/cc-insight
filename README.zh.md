@@ -33,35 +33,13 @@ CC Insight 把你本地的对话历史建立索引，以交互式仪表盘的形
 
 ## 功能
 
-### 使用概览
-- 4 个指标卡片：对话次数、累计时长、日均时长、活跃时段
-- Activity Heatmap：GitHub contribution graph 风格，自动填满容器
-- 24H 时间分布图：悬停整列触发 tooltip，多峰值同时高亮
-- 工具调用占比：环形图（Bash / Read / Edit 等内置工具）
-- 智能 Insights：使用习惯分析（夜猫子 / 早鸟 / 上班族）、趋势对比、最高产的一天
+**使用概览** — 对话次数、时长、活跃时段、GitHub 风格热力图、24H 分布图，以及使用习惯智能洞察。
 
-### 效率分析
-- 摘要卡片：耗时话题、最高轮次 Session、工具密度、最活跃项目
-- 耗时话题：各话题平均轮数 + 时长占比
-- 自动化程度：各话题工具调用密度（次调用 / 轮次）
-- 时间规律热力图：话题 × 小时，查看什么时间段处理什么类型任务
-- 高轮次 Session 列表：找出最耗时的对话，快速定位问题模式
-- 项目分布：活跃目录占比
+**效率分析** — 耗时话题排名、工具调用密度、高轮次 Session 列表、项目分布、时段 × 话题热力图。
 
-### Skill & Agent 管理
-- 已安装 Skill / Agent / Plugin 完整列表，跟随时间范围筛选
-- 从未使用列表：按闲置天数排序，支持一键批量清理
-- 闲置检测：当前时间范围内未使用自动标记
-- 安全扫描：检测 SKILL.md 中的高风险指令
-- AI 建议框：针对长期未用的工具给出清理建议
+**Skill & Agent 管理** — 已安装工具列表（含使用统计）、闲置检测、一键批量清理、SKILL.md 安全扫描。
 
-### MCP Server
-- 自动读取 `settings.json` 和 `claude_desktop_config.json`
-- 展示已配置的 MCP Server、工具列表及使用历史，按来源分组
-
-### 分享海报
-- 一键生成个性化使用画像：签名文案 + AI 人格标签 + 指标卡片 + 多行热力图 + 24H 分布图
-- 支持复制到剪贴板或下载为 PNG
+**MCP Server** — 自动读取配置文件，展示已配置的 MCP Server 及工具列表。
 
 ---
 
@@ -122,16 +100,6 @@ Web 服务仅监听 `127.0.0.1:3847`，只有本机可访问。
 | Skill / Agent | `~/.claude/skills/*/SKILL.md` |
 | Plugin | `~/.claude/plugins/cache/` |
 | MCP Server | `~/.claude/settings.json`、`~/Library/Application Support/Claude/claude_desktop_config.json` |
-
----
-
-## 迭代计划
-
-- [ ] 浅色主题切换
-- [ ] `cc-insight clean --before YYYY-MM` 归档历史数据
-- [ ] 话题趋势对比（本周 vs 上周）
-- [ ] 可选接入 Claude/OpenAI API Key，提升话题分类准确度
-- [ ] Token 消耗分析（各话题 input/output/cache 用量）
 
 ---
 

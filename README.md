@@ -33,15 +33,13 @@ CC Insight indexes your local session history and presents it as an interactive 
 
 ## Features
 
-**Overview** — Session count, total and daily duration, peak hours, GitHub-style activity heatmap, 24H distribution chart, tool call breakdown, smart habit insights.
+**Overview** — Session count, duration, peak hours, GitHub-style activity heatmap, 24H distribution, and smart habit insights.
 
-**Efficiency** — Most time-consuming topics, tool call density by topic, high-round session list, project activity distribution, time-of-day × topic heatmap.
+**Efficiency** — Time-consuming topics, tool call density, high-round sessions, project distribution, and a time-of-day × topic heatmap.
 
-**Skills** — Installed Skill / Agent / Plugin list with per-range usage counts. Idle detection (unused in selected range), one-click bulk cleanup, security scan on SKILL.md files.
+**Skills** — Installed Skill / Agent / Plugin list with usage stats, idle detection, one-click bulk cleanup, and security scan.
 
-**MCP Servers** — Reads `settings.json` and `claude_desktop_config.json`. Shows configured servers, their tools, and usage history.
-
-**Poster** — Generates a shareable usage card: personalized summary text, metric chips, activity heatmap, 24H chart. Export as PNG.
+**MCP Servers** — Configured servers and their tools, parsed from `settings.json` and `claude_desktop_config.json`.
 
 ---
 
@@ -101,16 +99,6 @@ It runs a local web server at `127.0.0.1:3847` — accessible from your machine 
 | Skills & Agents | `~/.claude/skills/*/SKILL.md` |
 | Plugins | `~/.claude/plugins/cache/` |
 | MCP Servers | `~/.claude/settings.json`, `~/Library/Application Support/Claude/claude_desktop_config.json` |
-
----
-
-## Roadmap
-
-- [ ] Light theme
-- [ ] `cc-insight clean --before YYYY-MM` to archive old data
-- [ ] Topic trend comparison (this week vs last week)
-- [ ] Optional API key for AI-powered topic classification
-- [ ] Token usage analytics per topic
 
 ---
 
