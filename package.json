@@ -22,10 +22,10 @@
     "skill",
     "mcp"
   ],
-  "homepage": "https://github.com/huangxiaoxuan/cc-insight",
+  "homepage": "https://github.com/hopeee-lab/cc-insight",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/huangxiaoxuan/cc-insight.git"
+    "url": "git+https://github.com/hopeee-lab/cc-insight.git"
   },
   "license": "MIT",
   "scripts": {

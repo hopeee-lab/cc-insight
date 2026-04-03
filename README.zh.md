@@ -62,7 +62,7 @@ cc-insight
 **从源码运行**
 
 ```bash
-git clone https://github.com/huangxiaoxuan/cc-insight.git
+git clone https://github.com/hopeee-lab/cc-insight.git
 cd cc-insight
 npm install
 npm start
