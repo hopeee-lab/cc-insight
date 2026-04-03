@@ -108,7 +108,7 @@ function summaryCards(data) {
         'var(--amber)')}
       ${card('工具密度高',
         topDensity ? topDensity.topic : '—',
-        topDensity ? `${topDensity.avgTurns} 轮 · ${topDensity.avgTools} 调用` : '暂无数据',
+        topDensity ? `${topDensity.avgTurns} 轮 · ${topDensity.avgTools} 次调用` : '暂无数据',
         'var(--cyan)')}
       ${card('最活跃项目',
         topProject ? (topProject.project.split('/').filter(Boolean).pop() ?? projectName(topProject.project)) : '—',
@@ -214,7 +214,7 @@ function renderRounds(el, rows, durationRows) {
 function renderDensity(el, rows) {
   const max = Math.max(...(rows ?? []).map(r => r.density), 1)
   renderScrollable(el, rows,
-    r => barItem(r.topic, `${r.avgTurns} 轮 · ${r.avgTools} 调用`, r.density / max * 100))
+    r => barItem(r.topic, `${r.avgTurns} 轮 · ${r.avgTools} 次调用`, r.density / max * 100))
 }
 
 // ── 时间规律热力图（话题 Y 轴 × 小时 X 轴）──

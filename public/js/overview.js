@@ -52,6 +52,8 @@ function statsCards(data) {
 }
 
 export async function renderOverview(container, range, preserveScroll = true) {
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
   const savedScroll = preserveScroll ? (container.querySelector('.split-right')?.scrollTop ?? 0) : 0
 
   const [overview, heatmap, dist, insights, toolDist] = await Promise.all([
@@ -222,20 +224,38 @@ function renderDist(el, data) {
     label.textContent = `峰值 ${peakList} · 静默 ${silent.length}h`
   }
 
+  const tooltipId = 'dist-tooltip'
   el.innerHTML = `
-    <div style="display:flex;gap:2px;align-items:flex-end;height:60px;">
-      ${hours.map(h => {
-        const pct = Math.max(h.count / max * 100, h.count > 0 ? 4 : 1)
-        const isPeak = peaks.has(h.hour) && max > 0
-        const color = isPeak ? 'var(--amber)' : (h.count > 0 ? 'var(--green)' : 'var(--bg3)')
-        return `<div title="${h.hour}:00 — ${h.count} sessions"
-          style="flex:1;background:${color};border-radius:2px 2px 0 0;height:${pct}%;min-height:2px;"></div>`
-      }).join('')}
+    <div style="position:relative;">
+      <div style="display:flex;gap:2px;align-items:flex-end;height:60px;">
+        ${hours.map(h => {
+          const pct = Math.max(h.count / max * 100, h.count > 0 ? 4 : 1)
+          const isPeak = peaks.has(h.hour) && max > 0
+          const color = isPeak ? 'var(--amber)' : (h.count > 0 ? 'var(--green)' : 'var(--bg3)')
+          return `<div class="dist-col" data-hour="${h.hour}" data-count="${h.count}"
+            style="flex:1;height:100%;display:flex;align-items:flex-end;cursor:default;">
+            <div style="width:100%;background:${color};border-radius:2px 2px 0 0;
+              height:${pct}%;min-height:2px;"></div>
+          </div>`
+        }).join('')}
+      </div>
+      <div id="${tooltipId}" style="position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);
+        font-size:11px;color:var(--muted);white-space:nowrap;pointer-events:none;opacity:0;
+        transition:opacity 0.1s;"></div>
     </div>
-    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+    <div style="display:flex;justify-content:space-between;margin-top:24px;">
       ${['0h','6h','12h','18h','23h'].map(l =>
         `<span style="font-size:11px;color:var(--muted);">${l}</span>`).join('')}
     </div>`
+
+  const tooltip = el.querySelector(`#${tooltipId}`)
+  el.querySelectorAll('.dist-col').forEach(col => {
+    col.addEventListener('mouseenter', () => {
+      tooltip.textContent = `${col.dataset.hour}:00 — ${col.dataset.count} sessions`
+      tooltip.style.opacity = '1'
+    })
+    col.addEventListener('mouseleave', () => { tooltip.style.opacity = '0' })
+  })
 }
 
 // ── Insights ──

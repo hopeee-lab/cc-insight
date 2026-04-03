@@ -515,7 +515,10 @@ function buildHeatmapSVG(heatmap, range) {
   }
 
   // all 模式或超出 maxWeeks：只取最近一屏
-  const displayWeeks = weeks.slice(-maxWeeks)
+  const dataWeeks = weeks.slice(-maxWeeks)
+  const padCount = Math.max(0, maxWeeks - dataWeeks.length)
+  const emptyWeek = Array(7).fill({ day: '', count: 0 })
+  const displayWeeks = [...Array(padCount).fill(emptyWeek), ...dataWeeks]
   const nWeeks = displayWeeks.length
   const svgW = LABEL_W + nWeeks * (CELL + GAP) - GAP
   const svgH = 7 * (CELL + GAP) - GAP

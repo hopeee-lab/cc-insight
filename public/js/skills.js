@@ -425,7 +425,7 @@ export function buildToolsListHtml(allTools, displayTools, currentFilter, page =
   return `
     <div class="card" style="min-height:0;display:flex;flex-direction:column;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:4px;">
-        <div class="section-title">${RANGE_TITLE[range] ?? '全部时间'} 工具</div>
+        <div class="section-title">${RANGE_TITLE[range] ?? '全部时间'}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">${tabHtml}</div>
       </div>
       <div id="tools-card-list">${bodyHtml}</div>
