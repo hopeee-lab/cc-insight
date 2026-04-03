@@ -41,6 +41,8 @@ CC Insight 把你本地的对话历史建立索引，以交互式仪表盘的形
 
 **MCP Server** — 自动读取配置文件，展示已配置的 MCP Server 及工具列表。
 
+<img width="2874" height="1548" alt="image" src="https://github.com/user-attachments/assets/cdca4f24-8a4b-40f2-b004-0474422412f7" />
+
 ---
 
 ## 环境要求
