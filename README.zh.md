@@ -1,113 +1,169 @@
 # CC Insight
 
-> 本地 [Claude Code](https://claude.ai/code) 使用数据可视化工具 — 真正了解你在用 AI 做什么。
+> 🔍 你真的知道自己在用 Claude Code 做什么吗？
 
-[English](README.md)
+CC Insight 将你本地的 Claude Code 使用数据，转化为一个可视化仪表盘：
+对话、习惯、工具使用、闲置 Skill —— 一目了然。
 
----
-
-## 为什么用？
-
-你已经用 Claude Code 很久了，但你真的知道自己怎么用的吗？
-
-**对自己的使用行为毫无感知。** 不知道哪类任务最耗时、哪个时段最高效、使用习惯是否在变化。
-
-**Skill 越装越多，却无法管理。** 工具一直在积累，但不知道哪些在用、哪些闲置已久、哪些存在安全隐患。
-
-**`/insights` 是主观感受，不是客观数据。** 它是 LLM 读完对话后写的文字报告——不可量化、不可筛选、不可横向比较。
-
-**MCP Server 分散在多个配置文件里。** 没有一个地方能看清楚配了什么服务、有哪些工具可用。
-
-CC Insight 把你本地的对话历史建立索引，以交互式仪表盘的形式呈现——无需云端、无需注册、数据不离本机。
-
-> "你以为自己在探索新技术，数据告诉你：60% 的时间在调 bug。"
+🔒 **100% 本地运行，数据不会离开你的电脑**
 
 ---
 
-## 与 `/insights` 的区别
+## ⚡ 5 秒你能获得什么？
 
-| | `/insights` | CC Insight |
-|---|---|---|
-| 输出形式 | 生成静态 HTML 文件 | 实时交互仪表盘 |
-| 历史范围 | 当前 session | 全量历史 + 时间范围筛选 |
-| 趋势分析 | — | 时段分布、话题趋势、效率指标 |
-| Skill 管理 | — | 使用统计、闲置检测、一键清理 |
-| MCP Server | — | 已配置服务器 + 工具列表 |
+* 📊 我一天什么时候最常用 Claude Code？
+* 🔥 哪类任务最耗时、最复杂？
+* 🧠 我的使用习惯是“上班型”还是“夜猫型”？
+* 🧹 哪些 Skill 从来没用过，可以一键清理？
 
 ---
 
-## 功能概述
+## 🖼️ 效果预览
 
-**使用概览** — 对话次数、时长、活跃时段、GitHub 风格热力图、24H 分布图，以及使用习惯智能洞察。
+### Overview 使用概览
 
-**效率分析** — 耗时话题排名、工具调用密度、高轮次 Session 列表、项目分布、时段 × 话题热力图。
+* 对话次数 / 使用时长 / 活跃时段
+* GitHub 风格使用热力图
+* 24 小时使用分布
+* 工具调用占比
 
-**Skill & Agent 管理** — 已安装工具列表（含使用统计）、闲置检测、一键批量清理、SKILL.md 安全扫描。
-
-**MCP Server** — 自动读取配置文件，展示已配置的 MCP Server 及工具列表。
-
-<img width="2874" height="1548" alt="image" src="https://github.com/user-attachments/assets/cdca4f24-8a4b-40f2-b004-0474422412f7" />
-
----
-
-## 环境要求
-
-- Node.js ≥ 20（推荐 LTS 版本：20、22 或 24）
-- 已安装并使用过 Claude Code（`~/.claude/` 目录存在）
+![overview](https://github.com/user-attachments/assets/cdca4f24-8a4b-40f2-b004-0474422412f7)
 
 ---
 
-## 安装指南
+## 🧰 环境要求
 
-**npm 安装（推荐）**
+在使用 CC Insight 之前，请确保：
+
+* Node.js ≥ 20（推荐 LTS 版本：20 / 22 / 24）
+* 已安装并使用过 Claude Code（本地存在 `~/.claude/` 目录）
+
+> macOS 如果安装失败，可先执行：
+>
+> ```bash
+> xcode-select --install
+> ```
+
+---
+
+## 🤔 为什么不用 `/insights`？
+
+|          | `/insights` | CC Insight  |
+| -------- | ----------- | ----------- |
+| 输出形式     | 静态 HTML     | 实时交互仪表盘     |
+| 数据范围     | 当前 session  | 全量历史 + 时间筛选 |
+| 趋势分析     | ❌           | ✅           |
+| Skill 管理 | ❌           | ✅           |
+| 数据隐私     | 本地          | 本地          |
+
+---
+
+## 🧠 为什么不用云端工具？
+
+* ❌ 需要上传数据
+* ❌ 存在隐私风险
+
+👉 CC Insight：
+
+* ✅ 本地运行
+* ✅ 数据完全可控
+* ✅ 无需注册 / 无需登录
+
+---
+
+## ⚡ 快速开始（10 秒上手）
 
 ```bash
 npm install -g cc-insight
 cc-insight
 ```
 
-**从源码运行**
+打开浏览器访问：
 
-```bash
-git clone https://github.com/hopeee-lab/cc-insight.git
-cd cc-insight
-npm install
-npm start
+```
+http://127.0.0.1:3847
 ```
 
-启动后浏览器自动打开 `http://127.0.0.1:3847`。
-
-> macOS 如果安装失败，先安装 Xcode 命令行工具：
-> `xcode-select --install`
+就这么简单。
 
 ---
 
-## 使用说明
+## ✨ 核心功能
 
-| 操作 | 方式 |
-|------|------|
-| 切换时间范围 | 各视图顶部 7 天 / 30 天 / 90 天 / 全部按钮 |
-| 重新扫描 Skill | 重启 CC Insight（每次启动自动执行） |
-| 重建对话索引 | 空状态页点击「重新检测」 |
-| 一键清理闲置工具 | Skill 页「从未使用」列表 → 「一键清理」 |
+### 📊 使用概览
+
+* 对话次数、总时长、活跃时间段
+* GitHub 风格热力图
+* 使用习惯智能洞察
+
+### 📈 效率分析
+
+* 最耗时任务分析
+* 工具调用密度分析
+* 高轮次对话识别
+* 项目分布统计
+
+### 🧰 Skill & Agent 管理
+
+* 使用统计（支持时间范围筛选）
+* 闲置检测（吃灰工具识别）
+* 一键批量清理
+* 安全扫描（危险指令提示）
+
+### 🔌 MCP Server
+
+* 自动读取配置
+* 展示已接入 MCP 工具
+
+### 🖼️ 分享海报
+
+* 一键生成你的 AI 使用画像
+* 支持导出图片分享
 
 ---
 
-## 数据安全
+## 🔒 数据与隐私
 
-CC Insight 只读取 `~/.claude/` 目录，在本地建立索引文件 `~/.cc-insight/data.db`。
-Web 服务仅监听 `127.0.0.1:3847`，只有本机可访问。
-**所有数据不会上传到任何服务器。**
+CC Insight 只读取本地目录：
 
-| 数据类型 | 来源路径 |
-|----------|----------|
-| 对话记录 | `~/.claude/projects/**/*.jsonl` |
-| Skill / Agent | `~/.claude/skills/*/SKILL.md` |
-| Plugin | `~/.claude/plugins/cache/` |
-| MCP Server | `~/.claude/settings.json`、`~/Library/Application Support/Claude/claude_desktop_config.json` |
+* `~/.claude/projects/`
+* `~/.claude/skills/`
+* `~/.claude/settings.json`
+
+数据仅存储在：
+
+```
+~/.cc-insight/data.db
+```
+
+👉 **不会上传到任何服务器**
 
 ---
 
-## License
+## 🧑‍💻 适合谁？
+
+* 重度 Claude Code 用户
+* AI 工具探索者 / 独立开发者（Indie Hacker）
+* 想优化自己 AI 使用效率的人
+
+---
+
+## ⭐ 支持项目
+
+如果你觉得这个工具对你有帮助，欢迎点个 Star ⭐
+这会帮助更多人发现 CC Insight 🙌
+
+---
+
+## 📄 License
 
 MIT
+
+## 💬 联系我
+
+如果你有任何建议或想法，欢迎交流或反馈：
+
+- Twitter: [https://twitter.com/xxx](https://x.com/hopeee_lab)
+- 或提交 Issue / PR
+
+也在持续做更多 AI 工具，欢迎关注后续更新 🚀
