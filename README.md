@@ -8,14 +8,18 @@
 
 ## Why
 
-Claude Code's built-in `/insights` command gives you a quick text summary. But it can't answer questions like:
+You've been using Claude Code for months. But do you actually know how?
 
-- Which topics take the most back-and-forth before they're resolved?
+Claude Code's built-in `/insights` generates a one-time text report — a snapshot written by the LLM itself, subjective and not comparable over time. It can't answer:
+
+- Which topics eat the most back-and-forth before they're resolved?
 - What time of day am I most productive?
 - Which skills did I install and never use?
-- How has my usage changed over the past month?
+- Am I using AI more or less than last month?
 
 CC Insight indexes your local session history and presents it as an interactive dashboard — no cloud, no account, no data leaving your machine.
+
+> "You think you're exploring. The data says 60% of your time is debugging."
 
 ---
 
