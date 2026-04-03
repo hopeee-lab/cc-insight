@@ -1,61 +1,67 @@
 # CC Insight
 
-A local dashboard for visualizing your [Claude Code](https://claude.ai/code) usage — sessions, skills, efficiency analysis, MCP servers, and a shareable poster.
-
-> All data stays on your machine. No uploads, no accounts.
+> A local analytics dashboard for [Claude Code](https://claude.ai/code) — understand how you actually use AI.
 
 [中文说明](README.zh.md)
 
 ---
 
+## Why
+
+Claude Code's built-in `/insights` command gives you a quick text summary. But it can't answer questions like:
+
+- Which topics take the most back-and-forth before they're resolved?
+- What time of day am I most productive?
+- Which skills did I install and never use?
+- How has my usage changed over the past month?
+
+CC Insight indexes your local session history and presents it as an interactive dashboard — no cloud, no account, no data leaving your machine.
+
+---
+
+## vs `/insights`
+
+| | `/insights` | CC Insight |
+|---|---|---|
+| Output | Text in terminal | Visual dashboard in browser |
+| History | Current session only | All-time + time range filter |
+| Skills | — | Usage stats, idle detection, bulk cleanup |
+| MCP Servers | — | Configured servers + tool list |
+| Shareable | — | Export as PNG poster |
+
+---
+
 ## Features
 
-### Overview
-- Session count, total duration, daily average, peak hours
-- GitHub-style Activity Heatmap with placeholder fill
-- 24H session distribution chart with hover tooltips
-- Tool call distribution (donut chart)
-- Smart Insights: habit analysis (night owl / early bird / 9-to-5), trend comparison, best day
+**Overview** — Session count, total and daily duration, peak hours, GitHub-style activity heatmap, 24H distribution chart, tool call breakdown, smart habit insights.
 
-### Efficiency (Insights)
-- Summary cards: most time-consuming topic, highest-round session, tool density, most active project
-- Time pattern heatmap: topic × hour grid
-- High-round session list (top 10, content-rich only)
-- Tool call density chart by topic
-- Project activity distribution
+**Efficiency** — Most time-consuming topics, tool call density by topic, high-round session list, project activity distribution, time-of-day × topic heatmap.
 
-### Skill & Agent Manager
-- Installed Skill / Agent / Plugin list with usage stats
-- Range-aware filtering: see what's installed in the last 7d / 30d / 90d / all time
-- Unused detection: one-click bulk cleanup
-- Security scan: flags high-risk instructions in SKILL.md
-- AI suggestion box for idle tools
+**Skills** — Installed Skill / Agent / Plugin list with per-range usage counts. Idle detection (unused in selected range), one-click bulk cleanup, security scan on SKILL.md files.
 
-### MCP Server
-- Auto-reads `settings.json` and `claude_desktop_config.json`
-- Shows configured servers, tools, and usage history
+**MCP Servers** — Reads `settings.json` and `claude_desktop_config.json`. Shows configured servers, their tools, and usage history.
 
-### Shareable Poster
-- Personalized usage card with summary text, metric chips, multi-row heatmap, and 24H chart
-- Export as PNG (copy to clipboard or download)
+**Poster** — Generates a shareable usage card: personalized summary text, metric chips, activity heatmap, 24H chart. Export as PNG.
 
 ---
 
 ## Requirements
 
 - Node.js ≥ 20
-- Claude Code installed and used at least once (`~/.claude/` directory must exist)
+- Claude Code installed (`~/.claude/` directory must exist)
+
+---
 
 ## Installation
 
-### npm (recommended)
+**npm (recommended)**
 
 ```bash
 npm install -g cc-insight
 cc-insight
 ```
 
-### From source
+**From source**
 
 ```bash
 git clone https://github.com/huangxiaoxuan/cc-insight.git
@@ -66,10 +72,8 @@ npm start
 
 The dashboard opens automatically at `http://127.0.0.1:3847`.
 
-> **Note:** `better-sqlite3` requires native compilation. On macOS, install Xcode Command Line Tools first:
-> ```bash
-> xcode-select --install
-> ```
+> macOS: if installation fails, install Xcode Command Line Tools first:
+> `xcode-select --install`
 
 ---
 
@@ -77,41 +81,36 @@ The dashboard opens automatically at `http://127.0.0.1:3847`.
 
 | Action | How |
 |--------|-----|
-| Switch time range | 7d / 30d / 90d / All buttons in each view |
-| Generate poster | Click "生成海报" in the top bar |
-| Export poster | Copy to clipboard or download PNG |
-| Detect new skills | Restart CC Insight — skills are re-scanned on every launch |
-| Re-index sessions | Click "重新检测" on the empty state screen |
-| Bulk clean unused tools | "一键清理" button in the Unused list |
+| Switch time range | 7d / 30d / 90d / All — top of each view |
+| Re-scan skills | Restart CC Insight (auto on every launch) |
+| Re-index sessions | "重新检测" on the empty state screen |
+| Bulk clean unused tools | "一键清理" in the Skills → Unused list |
+| Generate poster | "生成海报" button in the top bar |
 
 ---
 
-## Data Sources
+## Data & Privacy
 
-| Data | Path |
-|------|------|
+CC Insight reads only from `~/.claude/` and builds a local index at `~/.cc-insight/data.db`.
+It runs a local web server at `127.0.0.1:3847` — accessible from your machine only.
+**No data is ever sent anywhere.**
+
+| Data | Source |
+|------|--------|
 | Session history | `~/.claude/projects/**/*.jsonl` |
 | Skills & Agents | `~/.claude/skills/*/SKILL.md` |
 | Plugins | `~/.claude/plugins/cache/` |
 | MCP Servers | `~/.claude/settings.json`, `~/Library/Application Support/Claude/claude_desktop_config.json` |
 
-Database is stored at `~/.cc-insight/data.db`.
-
----
-
-## Privacy
-
-CC Insight runs entirely locally. It reads from `~/.claude/` and serves a web page at `127.0.0.1:3847`. No data is sent anywhere.
-
 ---
 
 ## Roadmap
 
-- [ ] Light theme toggle
-- [ ] `cc-insight clean --before YYYY-MM` command to archive old data
+- [ ] Light theme
+- [ ] `cc-insight clean --before YYYY-MM` to archive old data
 - [ ] Topic trend comparison (this week vs last week)
-- [ ] Optional Claude/OpenAI API key for AI-powered topic classification
-- [ ] Token usage analytics (input/output/cache per topic)
+- [ ] Optional API key for AI-powered topic classification
+- [ ] Token usage analytics per topic
 
 ---
 
