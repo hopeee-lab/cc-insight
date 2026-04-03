@@ -47,7 +47,7 @@ CC Insight indexes your local session history and presents it as an interactive 
 
 ## Requirements
 
-- Node.js ≥ 20
+- Node.js ≥ 20 (LTS recommended: 20, 22, or 24)
 - Claude Code installed (`~/.claude/` directory must exist)
 
 ---
