@@ -155,15 +155,17 @@ CC Insight 只读取本地目录：
 
 ---
 
-## 📄 License
-
-MIT
-
 ## 💬 联系我
 
-如果你有任何建议或想法，欢迎交流或反馈：
+如果你有任何建议或想法，欢迎交流反馈：
 
 - Twitter: [https://x.com/hopeee_lab](https://x.com/hopeee_lab)
 - 或提交 Issue / PR
 
-也在持续做更多 AI 工具，欢迎关注后续更新 🚀
+在持续做更多 AI 工具，欢迎关注后续更新 🚀
+
+---
+
+## 📄 License
+
+MIT
