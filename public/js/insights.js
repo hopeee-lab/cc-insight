@@ -157,7 +157,7 @@ export async function renderInsightsPage(container, range) {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="card" style="${cardStyle}">
-          <div class="section-header"><span class="section-title">时间规律 — 时段 × 话题</span></div>
+          <div class="section-header" style="padding-left:72px;"><span class="section-title">时间规律 — 时段 × 话题</span></div>
           <div id="ins-heatmap" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;"></div>
         </div>
         <div class="card" style="${cardStyle}">
@@ -276,8 +276,9 @@ function renderOutliers(el, rows) {
     return new Date(ms).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
   }
 
-  renderScrollable(el, rows, r => {
-    const msg     = r.firstUserMsg ?? '—'
+  const filtered = (rows ?? []).filter(r => r.firstUserMsg && r.firstUserMsg.trim())
+  renderScrollable(el, filtered, r => {
+    const msg     = r.firstUserMsg
     const preview = msg.length > 70 ? msg.slice(0, 70) + '…' : msg
     return `
       <div style="background:var(--bg3);border-radius:4px;padding:7px 10px;

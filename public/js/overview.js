@@ -155,7 +155,7 @@ function renderHeatmap(el, data) {
         ${week.map(cell => `
           <div ${isPlaceholder ? '' : `title="${cell.day}: ${cell.count} sessions"`}
             style="width:${CELL}px;height:${CELL}px;border-radius:2px;
-              background:${isPlaceholder ? 'transparent' : intensity(cell.count)};
+              background:${isPlaceholder ? 'var(--bg3)' : intensity(cell.count)};
               cursor:default;"></div>`).join('')}
       </div>`
   }
@@ -213,19 +213,20 @@ function renderDist(el, data) {
     count: map[String(i).padStart(2, '0')] ?? 0,
   }))
   const max = Math.max(...hours.map(h => h.count), 1)
-  const peak = hours.reduce((a, b) => b.count > a.count ? b : a)
+  const peaks = new Set(max > 0 ? hours.filter(h => h.count === max).map(h => h.hour) : [])
   const silent = hours.filter(h => h.count === 0)
 
   const label = document.getElementById('dist-peak-label')
-  if (label && peak.count > 0) {
-    label.textContent = `峰值 ${peak.hour}:00 · 静默 ${silent.length}h`
+  if (label && peaks.size > 0) {
+    const peakList = [...peaks].map(h => `${h}:00`).join('、')
+    label.textContent = `峰值 ${peakList} · 静默 ${silent.length}h`
   }
 
   el.innerHTML = `
     <div style="display:flex;gap:2px;align-items:flex-end;height:60px;">
       ${hours.map(h => {
         const pct = Math.max(h.count / max * 100, h.count > 0 ? 4 : 1)
-        const isPeak = h.hour === peak.hour && peak.count > 0
+        const isPeak = peaks.has(h.hour) && max > 0
         const color = isPeak ? 'var(--amber)' : (h.count > 0 ? 'var(--green)' : 'var(--bg3)')
         return `<div title="${h.hour}:00 — ${h.count} sessions"
           style="flex:1;background:${color};border-radius:2px 2px 0 0;height:${pct}%;min-height:2px;"></div>`

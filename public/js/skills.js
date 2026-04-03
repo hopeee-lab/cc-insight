@@ -169,7 +169,9 @@ export function buildTopToolsHtml(tools, range) {
 // ── 从未使用列表 ──
 export function buildUnusedToolsHtml(tools) {
   // 当前时间范围内未使用的工具
-  const unused = tools.filter(t => (t.useCount ?? 0) === 0)
+  const unused = tools
+    .filter(t => (t.useCount ?? 0) === 0)
+    .sort((a, b) => daysSince(b.installedAt) - daysSince(a.installedAt))
   if (unused.length === 0) return null
 
   const rows = unused.map(t => {
@@ -227,12 +229,7 @@ function fmtDate(iso) {
 function toMs(v) { return v ? (typeof v === 'number' ? v : new Date(v).getTime()) : null }
 
 function isDust(t) {
-  const limit = 30 * 86400_000
-  const last = toMs(t.lastUsedAt)
-  const inst = toMs(t.installedAt)
-  if (last !== null) return Date.now() - last > limit
-  if (inst !== null) return Date.now() - inst > limit
-  return false
+  return (t.useCount ?? 0) === 0
 }
 
 function relativeTime(ts) {
@@ -310,7 +307,7 @@ function toolCard(t, range = '7d') {
     ? `<span style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
         title="${t.localPath}">${t.localPath.replace(/^.*\.claude\//, '~/.claude/')}</span>`
     : ''
-  const dustTag  = dust ? `<span style="color:var(--red);">· 吃灰</span>` : ''
+  const dustTag  = dust ? `<span style="color:var(--red);">· 闲置</span>` : ''
 
   const statsRow = [usedStr, lastStr, installStr, updateStr, dustTag].filter(Boolean).join(
     `<span style="color:var(--border);margin:0 4px;">·</span>`)
@@ -364,6 +361,8 @@ function toolCard(t, range = '7d') {
 
 const PAGE_SIZE = 10
 
+const RANGE_TITLE = { '7d': '近 7 天安装', '30d': '近 30 天安装', '90d': '近 90 天安装', all: '全部时间' }
+
 // allTools 用于 tab 计数，displayTools 用于当前页显示
 export function buildToolsListHtml(allTools, displayTools, currentFilter, page = 0, range = '7d') {
   const dustCount = allTools.filter(isDust).length
@@ -372,7 +371,7 @@ export function buildToolsListHtml(allTools, displayTools, currentFilter, page =
     { key: 'skill',  label: `Skill (${allTools.filter(t=>t.type==='skill').length})` },
     { key: 'agent',  label: `Agent (${allTools.filter(t=>t.type==='agent').length})` },
     { key: 'plugin', label: `Plugin (${allTools.filter(t=>t.type==='plugin').length})` },
-    { key: 'dust',   label: `吃灰 (${dustCount})` },
+    { key: 'dust',   label: `闲置 (${dustCount})` },
   ]
 
   const tabHtml = tabs.map(tab => {
@@ -408,7 +407,7 @@ export function buildToolsListHtml(allTools, displayTools, currentFilter, page =
   return `
     <div class="card" style="min-height:0;display:flex;flex-direction:column;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:4px;">
-        <div class="section-title">全部工具</div>
+        <div class="section-title">${RANGE_TITLE[range] ?? '全部时间'} 工具</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">${tabHtml}</div>
       </div>
       <div id="tools-card-list">${bodyHtml}</div>
@@ -578,7 +577,7 @@ export function buildRecommendationsHtml(tools) {
         <span style="font-size:14px;color:var(--muted);">
           <span style="color:${color};font-size:11px;margin-right:4px;">${t.type[0].toUpperCase()}</span>${t.name}
         </span>
-        <span style="font-size:12px;color:var(--red);">吃灰</span>
+        <span style="font-size:12px;color:var(--red);">闲置</span>
       </div>`
   }).join('')
 
@@ -586,7 +585,7 @@ export function buildRecommendationsHtml(tools) {
     <div class="card">
       <div class="section-title" style="margin-bottom:8px;">建议清理</div>
       <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">
-        发现 <span style="color:var(--red);">${dust.length}</span> 个吃灰工具
+        发现 <span style="color:var(--red);">${dust.length}</span> 个闲置工具
       </div>
       <div style="margin-bottom:10px;">${rows}</div>
       <button id="bulk-clean-btn"
@@ -603,7 +602,7 @@ function renderRecommendations(el, tools, container, range) {
 
   el.querySelector('#bulk-clean-btn')?.addEventListener('click', async () => {
     const btn = el.querySelector('#bulk-clean-btn')
-    if (!confirm(`确认批量删除 ${tools.filter(isDust).length} 个吃灰工具？`)) return
+    if (!confirm(`确认批量删除 ${tools.filter(isDust).length} 个闲置工具？`)) return
     btn.disabled = true
     btn.textContent = '清理中…'
     try {
