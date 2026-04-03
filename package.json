@@ -1,6 +1,6 @@
 {
   "name": "cc-insight",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Local Claude Code usage dashboard — sessions, skills, efficiency, MCP servers, and shareable poster",
   "type": "module",
   "bin": {
