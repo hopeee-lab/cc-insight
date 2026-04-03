@@ -4,3 +4,7 @@ node_modules/
 .superpowers/
 *-this-session-is-being-continued-*.txt
 pic/
+CLAUDE.md
+docs/
+tests/
+session-notes.md
