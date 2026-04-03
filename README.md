@@ -1,6 +1,6 @@
 # CC Insight
 
-[中文说明](README.zh.md)
+🌐 English | [中文](README.zh.md)
 
 > 🔍 Do you really know how you use Claude Code?
 
