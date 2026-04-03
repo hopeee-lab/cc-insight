@@ -41,6 +41,8 @@ CC Insight indexes your local session history and presents it as an interactive 
 
 **MCP Servers** — Configured servers and their tools, parsed from `settings.json` and `claude_desktop_config.json`.
 
+<img width="2874" height="1548" alt="image" src="https://github.com/user-attachments/assets/b6a34467-13a3-4c5a-957a-263ec4d1dbe2" />
+
 ---
 
 ## Requirements
