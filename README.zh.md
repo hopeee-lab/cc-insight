@@ -2,6 +2,7 @@
 
 🌐 [English](README.md) | 中文
 
+
 > 🔍 你真的了解自己是如何使用 Claude Code 吗？
 
 CC Insight 将你本地的 Claude Code 使用数据，转化为一个可视化仪表盘：
