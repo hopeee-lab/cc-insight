@@ -10,12 +10,13 @@
 
 You've been using Claude Code for months. But do you actually know how?
 
-Claude Code's built-in `/insights` generates a one-time text report — a snapshot written by the LLM itself, subjective and not comparable over time. It can't answer:
+**No visibility into your usage.** You can't see which tasks eat the most time, when you're most productive, or whether your AI habits are changing.
 
-- Which topics eat the most back-and-forth before they're resolved?
-- What time of day am I most productive?
-- Which skills did I install and never use?
-- Am I using AI more or less than last month?
+**Skills pile up, unmanaged.** Installed tools accumulate with no way to know which ones you actually use, which have been idle for weeks, or which carry security risks.
+
+**`/insights` is a text report, not data.** It's the LLM's subjective take on your sessions — not quantified, not filterable, not comparable over time.
+
+**MCP Servers scattered across config files.** No single view of what's configured and what tools are actually available.
 
 CC Insight indexes your local session history and presents it as an interactive dashboard — no cloud, no account, no data leaving your machine.
 
