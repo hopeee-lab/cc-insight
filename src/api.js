@@ -175,11 +175,15 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
           }
         }
         const reg = registryMap[t.name] ?? {}
+        // registry 知道真实来源类型；DB 的 source_type 因 SKILL.md 无 source 字段，常为 'self'
+        const sourceType = reg.type ?? t.source_type
+        // DB source_url 通常为空，优先用 registry 的 source_url
+        const sourceUrl = t.source_url || reg.source_url || null
         return {
           ...t,
           // camelCase 别名（DB 返回 snake_case，前端统一用 camelCase）
-          sourceType:         t.source_type,
-          sourceUrl:          t.source_url,
+          sourceType,
+          sourceUrl,
           installedAt:        t.installed_at,
           updatedAt:          t.updated_at,
           securityScanResult: t.security_scan_result,

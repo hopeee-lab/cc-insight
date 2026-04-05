@@ -268,30 +268,36 @@ function toolCard(t, range = '7d') {
   const opacity = dust ? 'opacity:0.65;' : ''
 
   // 顶部标签行
-  const typeTag = `<span style="font-size:12px;padding:1px 6px;border-radius:3px;
-    background:${badge.color}18;color:${badge.color};border:1px solid ${badge.color}40;">
-    ${(t.type ?? '').toUpperCase()}</span>`
+  // typeTag 移到开头，去掉 S/A/P 字母徽章
+  const typeTag = `<span style="font-size:11px;font-weight:600;padding:2px 7px 2px 0;border-radius:3px;
+    background:${badge.color}22;color:${badge.color};border:1px solid ${badge.color}50;
+    border-left:none;letter-spacing:0.04em;flex-shrink:0;">${(t.type ?? '').toUpperCase()}</span>`
 
-  const sourceTag = ''
+  const isDownloaded = t.sourceType === 'downloaded'
+  const sourceTag = `<span style="font-size:11px;padding:2px 6px;border-radius:3px;
+    background:${isDownloaded ? 'var(--cyan)' : 'var(--muted)'}15;
+    color:${isDownloaded ? 'var(--cyan)' : 'var(--muted)'};
+    border:1px solid ${isDownloaded ? 'var(--cyan)' : 'var(--muted)'}35;flex-shrink:0;">
+    ${isDownloaded ? '下载' : '本地'}</span>`
 
-  const secTag = `<span style="font-size:12px;color:${secBadge.color};">${secBadge.text}</span>`
+  const secTag = `<span style="font-size:11px;color:${secBadge.color};flex-shrink:0;">${secBadge.text}</span>`
 
   // registry 元数据标签
   const versionTag = t.version
-    ? `<span style="font-size:12px;color:var(--muted);padding:1px 5px;border-radius:3px;
-        border:1px solid var(--border);">${t.version}</span>`
+    ? `<span style="font-size:11px;color:var(--muted);padding:2px 6px;border-radius:3px;
+        border:1px solid var(--border);flex-shrink:0;">${t.version}</span>`
     : ''
 
   const starsTag = t.stars > 0
     ? (() => {
         const n = t.stars >= 1000 ? (t.stars / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(t.stars)
-        return `<span style="font-size:12px;color:var(--amber);">★ ${n}</span>`
+        return `<span style="font-size:11px;color:var(--amber);flex-shrink:0;">★ ${n}</span>`
       })()
     : ''
 
   const activityTag = t.activity && t.activity !== 'active'
-    ? `<span style="font-size:12px;padding:1px 5px;border-radius:3px;
-        background:var(--red)18;color:var(--red);border:1px solid var(--red)40;">${t.activity}</span>`
+    ? `<span style="font-size:11px;padding:2px 6px;border-radius:3px;
+        background:var(--red)18;color:var(--red);border:1px solid var(--red)40;flex-shrink:0;">${t.activity}</span>`
     : ''
 
   // 描述（只显示含中文字符的描述）
@@ -308,11 +314,14 @@ function toolCard(t, range = '7d') {
         word-break:break-word;">${t.notes}</div>`
     : ''
 
-  // 来源链接
-  const sourceLink = t.sourceUrl
-    ? `<div style="margin-top:4px;">
+  // 来源链接（仅 downloaded 且有 URL 时显示）
+  const sourceLink = isDownloaded && t.sourceUrl
+    ? `<div style="margin-top:4px;display:flex;align-items:baseline;gap:6px;">
+        <span style="font-size:12px;padding:1px 5px 1px 0;border-radius:3px;flex-shrink:0;
+          background:var(--cyan)12;color:var(--cyan);border:1px solid var(--cyan)30;
+          border-left:none;">链接</span>
         <a href="${t.sourceUrl}" target="_blank" rel="noopener"
-          style="font-size:14px;color:var(--cyan);text-decoration:none;word-break:break-all;"
+          style="font-size:13px;color:var(--cyan);text-decoration:none;word-break:break-all;opacity:0.8;"
           title="${t.sourceUrl}">${t.sourceUrl.replace(/^https?:\/\//, '')}</a>
        </div>`
     : ''
@@ -356,33 +365,32 @@ function toolCard(t, range = '7d') {
 
   return `
     <div class="tool-card" data-name="${t.name}" data-type="${t.type}" data-dust="${dust}"
-      style="border-left:3px solid ${borderColor};padding-left:10px;${opacity}
-        padding-top:10px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+      style="border-left:3px solid ${borderColor};padding:12px 10px;${opacity}
+        margin-bottom:6px;border-radius:0 4px 4px 0;
+        background:var(--bg2);border-bottom:1px solid var(--border);">
 
-      <!-- 第一行：徽章 + 名称 + 信息标签 + 删除 -->
+      <!-- 第一行：类型 + 名称 + 元数据标签 + 操作按钮 -->
       <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;">
-        <span style="width:20px;height:20px;border-radius:3px;background:${badge.color}22;
-          color:${badge.color};font-size:12px;font-weight:bold;flex-shrink:0;
-          display:flex;align-items:center;justify-content:center;">${badge.label}</span>
-        <span style="font-size:14px;font-weight:600;" title="${t.name}">${t.name}</span>
-        ${typeTag}${sourceTag}${secTag}${versionTag}${starsTag}${activityTag}
-        <div style="flex:1;"></div>
+        ${typeTag}
+        <span style="font-size:14px;font-weight:700;color:var(--text);" title="${t.name}">${t.name}</span>
+        ${sourceTag}${secTag}${versionTag}${starsTag}${activityTag}
+        <div style="flex:1;min-width:8px;"></div>
         ${t.type === 'plugin' ? `
         <button class="detail-btn" data-name="${t.name}" data-range="${range}"
           style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);
-            border-radius:3px;padding:2px 8px;font-size:14px;cursor:pointer;
+            border-radius:3px;padding:1px 8px;font-size:12px;cursor:pointer;
             flex-shrink:0;font-family:var(--font);">技能</button>` : ''}
         <button class="del-btn" data-name="${t.name}" data-type="${t.type}"
-          style="background:transparent;border:1px solid var(--red);color:var(--red);
-            border-radius:3px;padding:2px 8px;font-size:14px;cursor:pointer;
+          style="background:transparent;border:1px solid var(--border);color:var(--muted);
+            border-radius:3px;padding:1px 8px;font-size:12px;cursor:pointer;
             flex-shrink:0;font-family:var(--font);">删除</button>
       </div>
 
-      <!-- 描述 -->
-      ${descRow}
-
-      <!-- 备注 -->
-      ${notesRow}
+      <!-- 描述 + 备注（合并层级，减少视觉割裂） -->
+      ${descRow || notesRow ? `
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">
+        ${descRow}${notesRow}
+      </div>` : ''}
 
       <!-- 来源链接 -->
       ${sourceLink}
@@ -391,12 +399,12 @@ function toolCard(t, range = '7d') {
       ${aiBox}
 
       <!-- 底部统计 + 本地路径 -->
-      <div style="margin-top:6px;display:flex;justify-content:space-between;
+      <div style="margin-top:7px;display:flex;justify-content:space-between;
         align-items:center;gap:8px;min-width:0;">
-        <div style="font-size:14px;color:var(--muted);display:flex;align-items:center;
-          gap:2px;flex-shrink:0;">${statsRow}</div>
-        <div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;
-          white-space:nowrap;min-width:0;text-align:right;">${pathStr}</div>
+        <div style="font-size:13px;color:var(--muted);display:flex;align-items:center;
+          gap:2px;flex-wrap:wrap;">${statsRow}</div>
+        <div style="font-size:11px;color:var(--muted);opacity:0.6;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;min-width:0;text-align:right;">${pathStr}</div>
       </div>
 
       <!-- 技能展开区（plugin 专用） -->
