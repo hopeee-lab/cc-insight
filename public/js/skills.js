@@ -276,12 +276,36 @@ function toolCard(t, range = '7d') {
 
   const secTag = `<span style="font-size:12px;color:${secBadge.color};">${secBadge.text}</span>`
 
+  // registry 元数据标签
+  const versionTag = t.version
+    ? `<span style="font-size:12px;color:var(--muted);padding:1px 5px;border-radius:3px;
+        border:1px solid var(--border);">${t.version}</span>`
+    : ''
+
+  const starsTag = t.stars > 0
+    ? (() => {
+        const n = t.stars >= 1000 ? (t.stars / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(t.stars)
+        return `<span style="font-size:12px;color:var(--amber);">★ ${n}</span>`
+      })()
+    : ''
+
+  const activityTag = t.activity && t.activity !== 'active'
+    ? `<span style="font-size:12px;padding:1px 5px;border-radius:3px;
+        background:var(--red)18;color:var(--red);border:1px solid var(--red)40;">${t.activity}</span>`
+    : ''
+
   // 描述（只显示含中文字符的描述）
   const hasChinese = s => /[\u4e00-\u9fff]/.test(s)
   const descText = t.description && hasChinese(t.description) ? t.description : null
   const descRow = descText
     ? `<div style="margin-top:5px;font-size:14px;color:var(--muted);line-height:1.5;
         word-break:break-word;max-width:66%;">${descText}</div>`
+    : ''
+
+  // 备注（notes）
+  const notesRow = t.notes
+    ? `<div style="margin-top:4px;font-size:13px;color:var(--muted);opacity:0.75;
+        word-break:break-word;">${t.notes}</div>`
     : ''
 
   // 来源链接
@@ -341,7 +365,7 @@ function toolCard(t, range = '7d') {
           color:${badge.color};font-size:12px;font-weight:bold;flex-shrink:0;
           display:flex;align-items:center;justify-content:center;">${badge.label}</span>
         <span style="font-size:14px;font-weight:600;" title="${t.name}">${t.name}</span>
-        ${typeTag}${sourceTag}${secTag}
+        ${typeTag}${sourceTag}${secTag}${versionTag}${starsTag}${activityTag}
         <div style="flex:1;"></div>
         ${t.type === 'plugin' ? `
         <button class="detail-btn" data-name="${t.name}" data-range="${range}"
@@ -356,6 +380,9 @@ function toolCard(t, range = '7d') {
 
       <!-- 描述 -->
       ${descRow}
+
+      <!-- 备注 -->
+      ${notesRow}
 
       <!-- 来源链接 -->
       ${sourceLink}

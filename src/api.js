@@ -17,6 +17,29 @@ import { getConfigPath, getAppDir, getClaudeDir } from './config.js'
 import { runFullIndex, getScanPaths } from './indexer.js'
 import { extractNickname, generatePosterText } from './poster.js'
 
+// ── 内置默认 registry 路径（ESM __dirname 等价） ──
+const DEFAULT_REGISTRY_PATH = new URL('./data/registry-default.json', import.meta.url)
+
+function loadRegistryMap(claudeDir) {
+  const map = {}
+  // 先加载内置默认（作为 baseline）
+  try {
+    const raw = fs.readFileSync(DEFAULT_REGISTRY_PATH, 'utf8')
+    for (const entry of JSON.parse(raw).skills ?? []) {
+      map[entry.name] = entry
+    }
+  } catch {}
+  // 用户 registry 覆盖默认（同名条目以用户为准）
+  try {
+    const userPath = path.join(claudeDir, 'skills', 'skill-manager', 'registry.json')
+    const raw = fs.readFileSync(userPath, 'utf8')
+    for (const entry of JSON.parse(raw).skills ?? []) {
+      map[entry.name] = entry
+    }
+  } catch {}
+  return map
+}
+
 // ── 工具路径校验（导出供测试） ──
 const TYPE_DIR = {
   skill:  'skills',
@@ -132,6 +155,11 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
     const statsMap = Object.fromEntries(usageStats.map(s => [s.toolName, s]))
     const allTimeMap = Object.fromEntries(allTimeStats.map(s => [s.toolName, s]))
     const claudeDir = getClaudeDir()
+
+    // 读取 skill-manager registry.json，补充 stars/notes/version/activity
+    // 优先读用户的 registry，找不到时 fall back 到内置默认
+    const registryMap = loadRegistryMap(claudeDir)
+
     const result = tools
       .filter(t => after === 0 || (t.installed_at ?? 0) >= after)
       .map(t => {
@@ -146,6 +174,7 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
             localPath = path.join(claudeDir, 'plugins', 'cache', parts[1], parts[2])
           }
         }
+        const reg = registryMap[t.name] ?? {}
         return {
           ...t,
           // camelCase 别名（DB 返回 snake_case，前端统一用 camelCase）
@@ -159,6 +188,11 @@ export function createRouter({ sendProgress = () => {}, sendRefresh = () => {} }
           useCount:         statsMap[t.name]?.useCount   ?? 0,
           lastUsedAt:       statsMap[t.name]?.lastUsedAt ?? null,
           allTimeUseCount:  allTimeMap[t.name]?.useCount  ?? 0,
+          // registry.json 补充元数据
+          stars:    reg.stars    ?? null,
+          version:  reg.version  ?? null,
+          activity: reg.activity ?? null,
+          notes:    reg.notes    ?? null,
         }
       })
     res.json(result)

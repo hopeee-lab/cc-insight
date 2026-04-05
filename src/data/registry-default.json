@@ -1,0 +1,294 @@
+{
+  "skills": [
+    {
+      "name": "skill-creator",
+      "type": "downloaded",
+      "description": "创建、修改、评估 skill，支持 evals 基准测试和描述优化",
+      "source_url": "https://github.com/anthropics/skills",
+      "stars": 94889,
+      "activity": "active",
+      "version": "main",
+      "notes": "Anthropic 官方 skills 仓库，无 release 版本，跟随 main 分支"
+    },
+    {
+      "name": "find-skills",
+      "type": "downloaded",
+      "description": "发现和安装 agent skill，通过 npx skills CLI 管理开放 skill 生态",
+      "source_url": "https://github.com/vercel-labs/skills",
+      "stars": 10457,
+      "activity": "active",
+      "version": "v1.4.4",
+      "notes": "Vercel Labs 出品，支持 40+ 编码代理"
+    },
+    {
+      "name": "xhs-data-product",
+      "type": "downloaded",
+      "description": "小红书数据产品干货笔记一键全流程，搜索爆款→生成文案→生成封面→发布",
+      "source_url": "https://github.com/xpzouying/xiaohongshu-mcp",
+      "stars": 11713,
+      "activity": "active",
+      "version": "v2026.03.09.0605-0e16f4b",
+      "notes": "依赖 xiaohongshu MCP 服务，底层仓库为 xpzouying/xiaohongshu-mcp"
+    },
+    {
+      "name": "agent-reach",
+      "type": "downloaded",
+      "description": "给AI agent提供互联网访问能力，支持搜索和阅读Twitter、Reddit、YouTube、GitHub、B站、小红书等16个平台，零配置，无需API key",
+      "source_url": "https://github.com/Panniantong/Agent-Reach",
+      "stars": 9951,
+      "activity": "active",
+      "version": "latest",
+      "notes": "安装路径 ~/.agents/skills/agent-reach，使用前需运行 agent-reach doctor 检查依赖；browser cookie 提取为 opt-in"
+    },
+    {
+      "name": "agent-browser",
+      "type": "downloaded",
+      "description": "Vercel官方出品的浏览器自动化CLI，支持导航网页、点击、填表、截图、抓取数据、UI测试等浏览器自动化任务",
+      "source_url": "https://github.com/vercel-labs/agent-browser",
+      "stars": 23518,
+      "activity": "active",
+      "version": "latest",
+      "notes": "安装路径 ~/.agents/skills/agent-browser，Vercel 官方出品，内置域名白名单、action policy 等安全机制"
+    },
+    {
+      "name": "docx",
+      "type": "downloaded",
+      "description": "Word文档创建、读取、编辑和处理，支持创建专业文档、提取内容、插入图片、处理修订等",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "官方文档处理技能，依赖LibreOffice、pandoc、docx-js"
+    },
+    {
+      "name": "pdf",
+      "type": "downloaded",
+      "description": "PDF文件处理，包括读取/提取文本/表格、合并/拆分、旋转、加水印、创建新PDF、填写表单、加密/解密、提取图片、OCR扫描文档",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "官方PDF处理技能，依赖pypdf、pdfplumber、reportlab、qpdf、poppler-utils"
+    },
+    {
+      "name": "pptx",
+      "type": "downloaded",
+      "description": "PowerPoint演示文稿创建、读取、编辑，支持创建幻灯片、提取内容、编辑现有演示文稿、合并/拆分、使用模板、处理备注和评论",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "官方PPT处理技能，依赖markitdown、pptxgenjs、LibreOffice、Poppler"
+    },
+    {
+      "name": "frontend-design",
+      "type": "downloaded",
+      "description": "创建独特的、生产级前端界面，具有高设计质量。用于构建Web组件、页面、应用，避免通用AI美学",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "官方前端设计技能，强调独特美学、字体选择、配色、动效和空间构图"
+    },
+    {
+      "name": "web-access",
+      "type": "downloaded",
+      "description": "所有联网操作必须通过此skill处理，包括搜索、网页抓取、登录后操作、网络交互等",
+      "source_url": "https://github.com/eze-is/web-access",
+      "stars": 0,
+      "activity": "active",
+      "version": "2.4.1",
+      "notes": "作者：一泽Eze，依赖Node.js 22+、Chrome remote-debugging"
+    },
+    {
+      "name": "xlsx",
+      "type": "downloaded",
+      "description": "电子表格创建、读取、编辑，支持处理.xlsx/.xlsm/.csv/.tsv文件、创建新表格、格式转换、数据清洗",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "官方表格处理技能，依赖pandas、openpyxl、LibreOffice"
+    },
+    {
+      "name": "lark-base",
+      "type": "downloaded",
+      "description": "飞书多维表格（Base）操作，建表、字段管理、记录读写、视图配置、历史查询、角色/表单/仪表盘管理",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.2.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-calendar",
+      "type": "downloaded",
+      "description": "飞书日历，提供日历与日程（会议）的全面管理能力",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-contact",
+      "type": "downloaded",
+      "description": "飞书通讯录，查询组织架构、人员信息和搜索员工",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-doc",
+      "type": "downloaded",
+      "description": "飞书云文档，创建和编辑飞书文档",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-drive",
+      "type": "downloaded",
+      "description": "飞书云空间，管理云空间中的文件和文件夹",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-event",
+      "type": "downloaded",
+      "description": "飞书事件订阅，通过WebSocket长连接实时监听飞书事件",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-im",
+      "type": "downloaded",
+      "description": "飞书即时通讯，收发消息和管理群聊",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-mail",
+      "type": "downloaded",
+      "description": "飞书邮箱，草稿、撰写、发送、回复、转发、阅读和搜索邮件",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-minutes",
+      "type": "downloaded",
+      "description": "飞书妙记，获取妙记基础信息和AI产物（总结、待办、章节）",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-openapi-explorer",
+      "type": "downloaded",
+      "description": "飞书/Lark原生OpenAPI探索，从官方文档库中挖掘未经CLI封装的原生OpenAPI接口",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-shared",
+      "type": "downloaded",
+      "description": "飞书/Lark CLI共享基础，应用配置初始化、认证登录、身份切换、权限与scope管理",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-sheets",
+      "type": "downloaded",
+      "description": "飞书电子表格，创建和操作电子表格",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-skill-maker",
+      "type": "downloaded",
+      "description": "创建lark-cli的自定义Skill，把飞书API操作封装成可复用的Skill",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-task",
+      "type": "downloaded",
+      "description": "飞书任务，管理任务和清单",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-vc",
+      "type": "downloaded",
+      "description": "飞书视频会议，查询会议记录、获取会议纪要产物",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-wiki",
+      "type": "downloaded",
+      "description": "飞书知识库，管理知识空间和文档节点",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-workflow-meeting-summary",
+      "type": "downloaded",
+      "description": "会议纪要整理工作流，汇总指定时间范围内的会议纪要并生成结构化报告",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    },
+    {
+      "name": "lark-workflow-standup-report",
+      "type": "downloaded",
+      "description": "日程待办摘要，编排calendar+agenda和task+get-my-tasks，生成指定日期的日程与未完成任务摘要",
+      "source_url": "",
+      "stars": 0,
+      "activity": "active",
+      "version": "1.0.0",
+      "notes": "飞书官方技能，依赖lark-cli"
+    }
+  ]
+}
