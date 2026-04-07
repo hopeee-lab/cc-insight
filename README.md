@@ -77,16 +77,14 @@ Before using CC Insight, make sure you have:
 
 ## ⚡ Quick Start
 
-```bash id="7vkm08"
-npm install -g cc-insight
-cc-insight
-```
+| Command | Description |
+|---------|-------------|
+| `npm install -g cc-insight` | Install |
+| `cc-insight` | Start (auto-opens http://127.0.0.1:3847) |
+| `cc-insight stop` | Stop and release port |
+| `npm uninstall -g cc-insight` | Uninstall |
 
-Open:
-
-http://127.0.0.1:3847
-
-That’s it.
+That's it.
 
 ---
 
