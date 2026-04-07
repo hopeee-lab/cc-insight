@@ -7,6 +7,13 @@ import { getMeta } from '../src/db/db.js'
 import open from 'open'
 
 const PORT = parseInt(process.env.CC_PORT ?? '3847')
+const [,, cmd] = process.argv
+
+if (cmd === 'stop') {
+  const { stopServer } = await import('../src/stop.js')
+  stopServer(PORT)
+  process.exit(0)
+}
 
 async function main() {
   const srv = createAppServer()
